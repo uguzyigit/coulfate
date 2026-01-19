@@ -1,0 +1,197 @@
+@model Nop.Plugin.Marketplace.VendorApplication.Models.Public.ApplyModel
+
+@{
+    Layout = "_ColumnsOne";
+    ViewBag.Title = T("Plugins.Marketplace.VendorApplication.Apply.Title").Text;
+}
+
+<div class="page vendor-application-page">
+    <div class="page-title">
+        <h1>@T("Plugins.Marketplace.VendorApplication.Apply.Title")</h1>
+    </div>
+    <div class="page-body">
+        @* Navigation Tabs *@
+        <div class="vendor-application-tabs" style="margin-bottom: 20px;">
+            <a href="@Url.Action("Apply", "VendorApplication")" class="button-1" style="margin-right: 10px;">
+                <i class="fas fa-plus"></i> @T("Plugins.Marketplace.VendorApplication.Nav.NewApplication")
+            </a>
+            <a href="@Url.Action("CheckStatus", "VendorApplication")" class="button-2">
+                <i class="fas fa-search"></i> @T("Plugins.Marketplace.VendorApplication.Nav.CheckStatus")
+            </a>
+        </div>
+
+        <p class="lead">@T("Plugins.Marketplace.VendorApplication.Apply.Subtitle")</p>
+
+        <form asp-action="Apply" asp-controller="VendorApplication" method="post" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="message-error"></div>
+
+            @* Company Information *@
+            <div class="fieldset">
+                <div class="title">
+                    <strong>@T("Plugins.Marketplace.VendorApplication.Apply.CompanyInfo")</strong>
+                </div>
+                <div class="form-fields">
+                    <div class="inputs">
+                        <label asp-for="CompanyName" class="col-form-label"></label>
+                        <input asp-for="CompanyName" class="form-control" />
+                        <span asp-validation-for="CompanyName"></span>
+                    </div>
+                    <div class="inputs">
+                        <label asp-for="ContactPerson" class="col-form-label"></label>
+                        <input asp-for="ContactPerson" class="form-control" />
+                        <span asp-validation-for="ContactPerson"></span>
+                    </div>
+                    <div class="inputs">
+                        <label asp-for="Email" class="col-form-label"></label>
+                        <input asp-for="Email" type="email" class="form-control" />
+                        <span asp-validation-for="Email"></span>
+                    </div>
+                    <div class="inputs">
+                        <label asp-for="Phone" class="col-form-label"></label>
+                        <input asp-for="Phone" class="form-control" />
+                        <span asp-validation-for="Phone"></span>
+                    </div>
+                </div>
+            </div>
+
+            @* Legal Information *@
+            <div class="fieldset">
+                <div class="title">
+                    <strong>@T("Plugins.Marketplace.VendorApplication.Apply.LegalInfo")</strong>
+                </div>
+                <div class="form-fields">
+                    <div class="inputs">
+                        <label asp-for="TaxNumber" class="col-form-label"></label>
+                        <input asp-for="TaxNumber" class="form-control" />
+                    </div>
+                    <div class="inputs">
+                        <label asp-for="TradeRegistryNumber" class="col-form-label"></label>
+                        <input asp-for="TradeRegistryNumber" class="form-control" />
+                    </div>
+                </div>
+            </div>
+
+            @* Address Information *@
+            <div class="fieldset">
+                <div class="title">
+                    <strong>@T("Plugins.Marketplace.VendorApplication.Apply.AddressInfo")</strong>
+                </div>
+                <div class="form-fields">
+                    <div class="inputs">
+                        <label asp-for="Address" class="col-form-label"></label>
+                        <textarea asp-for="Address" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="inputs">
+                        <label asp-for="City" class="col-form-label"></label>
+                        <input asp-for="City" class="form-control" />
+                    </div>
+                    <div class="inputs">
+                        <label asp-for="District" class="col-form-label"></label>
+                        <input asp-for="District" class="form-control" />
+                    </div>
+                    <div class="inputs">
+                        <label asp-for="PostalCode" class="col-form-label"></label>
+                        <input asp-for="PostalCode" class="form-control" />
+                    </div>
+                </div>
+            </div>
+
+            @* Bank Information *@
+            <div class="fieldset">
+                <div class="title">
+                    <strong>@T("Plugins.Marketplace.VendorApplication.Apply.BankInfo")</strong>
+                </div>
+                <div class="form-fields">
+                    <div class="inputs">
+                        <label asp-for="BankAccountHolder" class="col-form-label"></label>
+                        <input asp-for="BankAccountHolder" class="form-control" />
+                    </div>
+                    <div class="inputs">
+                        <label asp-for="BankIban" class="col-form-label"></label>
+                        <input asp-for="BankIban" class="form-control" />
+                    </div>
+                    <div class="inputs">
+                        <label asp-for="BankName" class="col-form-label"></label>
+                        <input asp-for="BankName" class="form-control" />
+                    </div>
+                </div>
+            </div>
+
+            @* Required Documents *@
+            @if (Model.DocumentTypes.Any())
+            {
+                <div class="fieldset">
+                    <div class="title">
+                        <strong>@T("Plugins.Marketplace.VendorApplication.Apply.Documents")</strong>
+                    </div>
+                    <div class="form-fields">
+                        @foreach (var docType in Model.DocumentTypes)
+                        {
+                            <div class="inputs">
+                                <label class="col-form-label">
+                                    @docType.Name
+                                    @if (docType.IsRequired)
+                                    {
+                                        <span class="required">*</span>
+                                    }
+                                </label>
+                                <input type="file" name="document_@docType.DocumentTypeId" class="form-control" accept="@docType.AllowedExtensions" />
+                                @if (!string.IsNullOrEmpty(docType.Description))
+                                {
+                                    <span class="hint">@docType.Description</span>
+                                }
+                                <span class="hint">
+                                    @T("Plugins.Marketplace.VendorApplication.DocumentTypes.AllowedExtensions"): @docType.AllowedExtensions |
+                                    Max: @docType.MaxFileSizeKb KB
+                                </span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            @* Additional Information *@
+            <div class="fieldset">
+                <div class="title">
+                    <strong>@T("Plugins.Marketplace.VendorApplication.Apply.AdditionalInfo")</strong>
+                </div>
+                <div class="form-fields">
+                    <div class="inputs">
+                        <label asp-for="Description" class="col-form-label">@T("Plugins.Marketplace.VendorApplication.Apply.Description")</label>
+                        <textarea asp-for="Description" class="form-control" rows="5" placeholder="@T("Plugins.Marketplace.VendorApplication.Apply.Description.Hint")"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            @* Terms of Service *@
+            @if (Model.RequireTermsOfService)
+            {
+                <div class="fieldset">
+                    <div class="form-fields">
+                        <div class="inputs" style="display: flex; align-items: center;">
+                            <label class="col-form-label" style="margin-right: 10px;"></label>
+                            <input asp-for="AcceptTerms" type="checkbox" id="AcceptTerms" style="margin-right: 8px;" />
+                            <label for="AcceptTerms">@T("Plugins.Marketplace.VendorApplication.Apply.AcceptTerms")</label>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @* CAPTCHA *@
+            @if (Model.DisplayCaptcha)
+            {
+                <div class="fieldset">
+                    <div class="captcha-box">
+                        <nop-captcha />
+                    </div>
+                </div>
+            }
+
+            <div class="buttons">
+                <button type="submit" name="submit" class="button-1 vendor-apply-button">
+                    @T("Plugins.Marketplace.VendorApplication.Apply.Submit")
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

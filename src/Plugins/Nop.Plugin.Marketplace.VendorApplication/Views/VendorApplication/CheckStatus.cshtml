@@ -1,0 +1,111 @@
+@using Nop.Plugin.Marketplace.VendorApplication.Domain
+@model Nop.Plugin.Marketplace.VendorApplication.Models.Public.ApplicationStatusModel
+
+@{
+    Layout = "_ColumnsOne";
+    ViewBag.Title = T("Plugins.Marketplace.VendorApplication.CheckStatus.Title").Text;
+
+    var checkModel = ViewBag.CheckStatusModel as Nop.Plugin.Marketplace.VendorApplication.Models.Public.CheckStatusModel
+        ?? new Nop.Plugin.Marketplace.VendorApplication.Models.Public.CheckStatusModel();
+}
+
+<div class="page vendor-application-status-page">
+    <div class="page-title">
+        <h1>@T("Plugins.Marketplace.VendorApplication.CheckStatus.Title")</h1>
+    </div>
+    <div class="page-body">
+        @* Navigation Tabs *@
+        <div class="vendor-application-tabs" style="margin-bottom: 20px;">
+            <a href="@Url.Action("Apply", "VendorApplication")" class="button-2" style="margin-right: 10px;">
+                <i class="fas fa-plus"></i> @T("Plugins.Marketplace.VendorApplication.Nav.NewApplication")
+            </a>
+            <a href="@Url.Action("CheckStatus", "VendorApplication")" class="button-1">
+                <i class="fas fa-search"></i> @T("Plugins.Marketplace.VendorApplication.Nav.CheckStatus")
+            </a>
+        </div>
+
+        <form asp-action="CheckStatus" asp-controller="VendorApplication" method="post">
+            <div class="fieldset">
+                <div class="form-fields">
+                    <div class="inputs">
+                        <label for="ApplicationNumber" class="col-form-label">
+                            @T("Plugins.Marketplace.VendorApplication.CheckStatus.ApplicationNumber")
+                        </label>
+                        <input type="text" name="ApplicationNumber" id="ApplicationNumber" value="@checkModel.ApplicationNumber" class="form-control" placeholder="VA20260116-0001" required />
+                    </div>
+                    <div class="inputs">
+                        <label for="Email" class="col-form-label">
+                            @T("Plugins.Marketplace.VendorApplication.CheckStatus.Email")
+                        </label>
+                        <input type="email" name="Email" id="Email" value="@checkModel.Email" class="form-control" required />
+                    </div>
+                </div>
+                <div class="buttons">
+                    <button type="submit" class="button-1">
+                        @T("Plugins.Marketplace.VendorApplication.CheckStatus.Submit")
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        @if (ViewBag.CheckStatusModel != null)
+        {
+            <div class="result" style="margin-top: 20px;">
+                @if (Model.Found)
+                {
+                    <div class="application-status-result">
+                        <table class="data-table">
+                            <tr>
+                                <td><strong>@T("Plugins.Marketplace.VendorApplication.CheckStatus.ApplicationNumber")</strong></td>
+                                <td>@Model.ApplicationNumber</td>
+                            </tr>
+                            <tr>
+                                <td><strong>@T("Plugins.Marketplace.VendorApplication.Apply.CompanyName")</strong></td>
+                                <td>@Model.CompanyName</td>
+                            </tr>
+                            <tr>
+                                <td><strong>@T("Plugins.Marketplace.VendorApplication.CheckStatus.Status")</strong></td>
+                                <td>
+                                    <span class="status-badge status-@Model.Status.ToString().ToLower()">
+                                        @Model.StatusName
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>@T("Plugins.Marketplace.VendorApplication.CheckStatus.SubmittedOn")</strong></td>
+                                <td>@Model.SubmittedOn.ToString("g")</td>
+                            </tr>
+                            @if (Model.Status == VendorApplicationStatus.Rejected && !string.IsNullOrEmpty(Model.RejectionReason))
+                            {
+                                <tr>
+                                    <td><strong>@T("Plugins.Marketplace.VendorApplication.CheckStatus.RejectionReason")</strong></td>
+                                    <td>@Model.RejectionReason</td>
+                                </tr>
+                            }
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="message-error">
+                        @T("Plugins.Marketplace.VendorApplication.CheckStatus.NotFound")
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+    .status-pending { background-color: #ffc107; color: #000; }
+    .status-underreview { background-color: #17a2b8; color: #fff; }
+    .status-documentsrequested { background-color: #fd7e14; color: #fff; }
+    .status-approved { background-color: #28a745; color: #fff; }
+    .status-rejected { background-color: #dc3545; color: #fff; }
+    .status-cancelled { background-color: #6c757d; color: #fff; }
+</style>

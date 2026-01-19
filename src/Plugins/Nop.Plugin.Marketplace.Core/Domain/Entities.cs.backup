@@ -1,0 +1,118 @@
+using System;
+using System.ComponentModel.DataAnnotations.Schema;
+using Nop.Core;
+
+namespace Nop.Plugin.Marketplace.Core.Domain;
+
+/// <summary>
+/// Represents vendor status enumeration
+/// </summary>
+public enum VendorStatus
+{
+    Pending = 0,
+    Approved = 10,
+    Active = 20,
+    Rejected = 30,
+    Suspended = 40
+}
+
+/// <summary>
+/// Represents a marketplace vendor
+/// </summary>
+[Table("MarketplaceVendor")]
+public partial class Vendor : BaseEntity
+{
+    public string Name { get; set; }
+    public string Code { get; set; }
+    public VendorStatus Status { get; set; }
+    public string ContactEmail { get; set; }
+    public string Phone { get; set; }
+    public string BankAccountName { get; set; }
+    public string BankIban { get; set; }
+    public DateTime CreatedOnUtc { get; set; }
+    public DateTime UpdatedOnUtc { get; set; }
+}
+
+/// <summary>
+/// Represents vendor-product relationship
+/// </summary>
+[Table("MarketplaceVendorProduct")]
+public partial class VendorProduct : BaseEntity
+{
+    public int VendorId { get; set; }
+    public int ProductId { get; set; }
+    public string VendorSku { get; set; }
+    public decimal VendorPrice { get; set; }
+    public int StockQuantity { get; set; }
+    public bool IsApproved { get; set; }
+    public DateTime CreatedOnUtc { get; set; }
+    public DateTime UpdatedOnUtc { get; set; }
+}
+
+/// <summary>
+/// Represents a vendor order line
+/// </summary>
+[Table("MarketplaceVendorOrderLine")]
+public partial class VendorOrderLine : BaseEntity
+{
+    public int OrderItemId { get; set; }
+    public int OrderId { get; set; }
+    public int VendorId { get; set; }
+    public int ProductId { get; set; }
+    public int Quantity { get; set; }
+    public decimal UnitPrice { get; set; }
+    public decimal CommissionRateSnapshot { get; set; }
+    public decimal CommissionAmountSnapshot { get; set; }
+    public decimal NetAmountSnapshot { get; set; }
+    public DateTime CreatedOnUtc { get; set; }
+}
+
+/// <summary>
+/// Represents vendor balance
+/// </summary>
+[Table("MarketplaceVendorBalance")]
+public partial class VendorBalance : BaseEntity
+{
+    public int VendorId { get; set; }
+    public decimal CurrentBalance { get; set; }
+    public decimal Pending { get; set; }
+    public decimal Hold { get; set; }
+    public DateTime UpdatedOnUtc { get; set; }
+}
+
+/// <summary>
+/// Represents vendor shipping account
+/// </summary>
+[Table("MarketplaceVendorShippingAccount")]
+public partial class VendorShippingAccount : BaseEntity
+{
+    public int VendorId { get; set; }
+    public string Carrier { get; set; }
+    public string ApiKey { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime CreatedOnUtc { get; set; }
+}
+
+/// <summary>
+/// Represents vendor payout status
+/// </summary>
+public enum VendorPayoutStatus
+{
+    Requested = 0,
+    Processed = 10,
+    Cancelled = 20
+}
+
+/// <summary>
+/// Represents a vendor payout
+/// </summary>
+[Table("MarketplaceVendorPayout")]
+public partial class VendorPayout : BaseEntity
+{
+    public int VendorId { get; set; }
+    public decimal Amount { get; set; }
+    public VendorPayoutStatus Status { get; set; }
+    public DateTime RequestedOnUtc { get; set; }
+    public DateTime? ProcessedOnUtc { get; set; }
+    public string ExternalRef { get; set; }
+}

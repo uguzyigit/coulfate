@@ -1,0 +1,112 @@
+@model VendorModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Marketplace.Core.Vendor.Edit").Text;
+}
+
+<form asp-controller="Vendor" asp-action="Edit" asp-area="Admin" method="post">
+    <input asp-for="Id" type="hidden" />
+    
+    <div class="content-header clearfix">
+        <h1 class="float-left">
+            @T("Plugins.Marketplace.Core.Vendor.Edit") - @Model.Name
+        </h1>
+        <div class="float-right">
+            <button type="submit" name="save" class="btn btn-primary">
+                <i class="far fa-save"></i>
+                @T("Admin.Common.Save")
+            </button>
+            <a asp-controller="Vendor" asp-action="Index" asp-area="Admin" class="btn btn-default">
+                @T("Admin.Common.Back")
+            </a>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="card card-default">
+            <div class="card-body">
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="Name" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="Name" />
+                        <span asp-validation-for="Name"></span>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="Code" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="Code" />
+                        <span asp-validation-for="Code"></span>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="Status" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-select asp-for="Status" asp-items="Html.GetEnumSelectList<VendorStatus>()" />
+                        <span asp-validation-for="Status"></span>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="ContactEmail" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="ContactEmail" />
+                        <span asp-validation-for="ContactEmail"></span>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="Phone" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="Phone" />
+                        <span asp-validation-for="Phone"></span>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="BankAccountName" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="BankAccountName" />
+                        <span asp-validation-for="BankAccountName"></span>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="BankIban" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="BankIban" />
+                        <span asp-validation-for="BankIban"></span>
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        @T("Plugins.Marketplace.Core.Fields.CreatedOn")
+                    </div>
+                    <div class="col-md-9">
+                        @Model.CreatedOnUtc.ToString("g")
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        @T("Plugins.Marketplace.Core.Fields.UpdatedOn")
+                    </div>
+                    <div class="col-md-9">
+                        @Model.UpdatedOnUtc.ToString("g")
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>

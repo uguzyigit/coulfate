@@ -1,0 +1,93 @@
+@model Nop.Plugin.Marketplace.VendorApplication.Models.Admin.ConfigurationModel
+
+@{
+    Layout = "_ConfigurePlugin";
+    ViewBag.Title = T("Plugins.Marketplace.VendorApplication.Configure.Title").Text;
+}
+
+<form asp-controller="VendorApplicationAdmin" asp-action="Configure" method="post">
+    <div class="card card-default">
+        <div class="card-header">
+            @T("Plugins.Marketplace.VendorApplication.Configure.Title")
+        </div>
+        <div class="card-body">
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="Enabled" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="Enabled" />
+                    <span asp-validation-for="Enabled"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="DisplayCaptcha" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="DisplayCaptcha" />
+                    <span asp-validation-for="DisplayCaptcha"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="RequireTermsOfService" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="RequireTermsOfService" />
+                    <span asp-validation-for="RequireTermsOfService"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="NotifyAdminOnNewApplication" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="NotifyAdminOnNewApplication" />
+                    <span asp-validation-for="NotifyAdminOnNewApplication"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="NotifyApplicantOnReceived" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="NotifyApplicantOnReceived" />
+                    <span asp-validation-for="NotifyApplicantOnReceived"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="NotifyApplicantOnApproved" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="NotifyApplicantOnApproved" />
+                    <span asp-validation-for="NotifyApplicantOnApproved"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="NotifyApplicantOnRejected" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="NotifyApplicantOnRejected" />
+                    <span asp-validation-for="NotifyApplicantOnRejected"></span>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div class="col-md-3">
+                    <nop-label asp-for="AdminNotificationEmail" />
+                </div>
+                <div class="col-md-9">
+                    <nop-editor asp-for="AdminNotificationEmail" />
+                    <span asp-validation-for="AdminNotificationEmail"></span>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button type="submit" name="save" class="btn btn-primary">
+                @T("Admin.Common.Save")
+            </button>
+        </div>
+    </div>
+</form>

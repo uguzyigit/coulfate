@@ -1,0 +1,74 @@
+@model ConfigurationModel
+
+@{
+    Layout = "_ConfigurePlugin";
+    ViewBag.PageTitle = T("Plugins.Marketplace.Core.Configure").Text;
+}
+
+<div class="content-header clearfix mb-3">
+    <h1 class="float-left">
+        @T("Plugins.Marketplace.Core.Configure")
+    </h1>
+    <div class="float-right">
+        <a asp-controller="MarketplaceVendor" asp-action="Index" asp-area="Admin" class="btn btn-primary">
+            <i class="fas fa-users"></i>
+            @T("Plugins.Marketplace.Core.Menu.Vendors")
+        </a>
+    </div>
+</div>
+
+<form asp-controller="MarketplaceVendor" asp-action="Configure" asp-area="Admin" method="post">
+    <div class="cards-group">
+        <div class="card card-default">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-cogs"></i>
+                    @T("Plugins.Marketplace.Core.Configure")
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="Enabled" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="Enabled" />
+                        <span asp-validation-for="Enabled"></span>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="RequireVendorApproval" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="RequireVendorApproval" />
+                        <span asp-validation-for="RequireVendorApproval"></span>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="MinimumPayoutAmount" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="MinimumPayoutAmount" />
+                        <span asp-validation-for="MinimumPayoutAmount"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button type="submit" name="save" class="btn btn-primary">
+                    <i class="far fa-save"></i>
+                    @T("Admin.Common.Save")
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="alert alert-info mt-3">
+    <i class="fas fa-info-circle"></i>
+    <strong>Hızlı Erişim:</strong> 
+    Satıcı yönetimi için yukarıdaki "Satıcılar" butonuna tıklayın veya 
+    doğrudan şu URL'yi kullanın: 
+    <code>/Admin/Marketplace/Vendor/List</code>
+</div>

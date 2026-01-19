@@ -1,0 +1,14 @@
+{
+  "Group": "Marketplace",
+  "FriendlyName": "Vendor Application",
+  "SystemName": "Marketplace.VendorApplication",
+  "Version": "1.0.0",
+  "SupportedVersions": [ "4.90" ],
+  "Author": "Your Company",
+  "DisplayOrder": 2,
+  "FileName": "Nop.Plugin.Marketplace.VendorApplication.dll",
+  "Description": "Public vendor application system. Allows anyone to apply to become a vendor with customizable document requirements and email notifications.",
+  "LimitedToStores": [],
+  "LimitedToCustomerRoles": [],
+  "DependsOnSystemNames": []
+}

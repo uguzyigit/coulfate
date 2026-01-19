@@ -1,0 +1,202 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Nop.Core;
+using Nop.Data;
+using Nop.Services.Configuration;
+using Nop.Services.Localization;
+using Nop.Services.Plugins;
+
+namespace Nop.Plugin.Marketplace.Core;
+
+/// <summary>
+/// Marketplace Core plugin
+/// </summary>
+public class MarketplaceCorePlugin : BasePlugin
+{
+    private readonly IWebHelper _webHelper;
+    private readonly ISettingService _settingService;
+    private readonly ILocalizationService _localizationService;
+    private readonly INopDataProvider _dataProvider;
+
+    public MarketplaceCorePlugin(
+        IWebHelper webHelper,
+        ISettingService settingService,
+        ILocalizationService localizationService,
+        INopDataProvider dataProvider)
+    {
+        _webHelper = webHelper;
+        _settingService = settingService;
+        _localizationService = localizationService;
+        _dataProvider = dataProvider;
+    }
+
+    public override string GetConfigurationPageUrl()
+    {
+        return $"{_webHelper.GetStoreLocation()}Admin/MarketplaceVendor/Configure";
+    }
+
+    public override async Task InstallAsync()
+    {
+        // Install settings
+        var settings = new MarketplaceCoreSettings
+        {
+            Enabled = true,
+            RequireVendorApproval = true,
+            MinimumPayoutAmount = 100m,
+            MaxPendingDays = 30
+        };
+        await _settingService.SaveSettingAsync(settings);
+
+        // Create database tables
+        await _dataProvider.ExecuteNonQueryAsync(@"
+            IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[MarketplaceVendor]') AND type in (N'U'))
+            BEGIN
+                CREATE TABLE [dbo].[MarketplaceVendor](
+                    [Id] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                    [Name] [nvarchar](400) NOT NULL,
+                    [Code] [nvarchar](50) NOT NULL UNIQUE,
+                    [Status] [int] NOT NULL,
+                    [ContactEmail] [nvarchar](255) NULL,
+                    [Phone] [nvarchar](50) NULL,
+                    [BankAccountName] [nvarchar](255) NULL,
+                    [BankIban] [nvarchar](100) NULL,
+                    [CreatedOnUtc] [datetime2](7) NOT NULL,
+                    [UpdatedOnUtc] [datetime2](7) NOT NULL
+                )
+            END
+        ");
+
+        await _dataProvider.ExecuteNonQueryAsync(@"
+            IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[MarketplaceVendorProduct]') AND type in (N'U'))
+            BEGIN
+                CREATE TABLE [dbo].[MarketplaceVendorProduct](
+                    [Id] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                    [VendorId] [int] NOT NULL,
+                    [ProductId] [int] NOT NULL,
+                    [VendorSku] [nvarchar](100) NULL,
+                    [VendorPrice] [decimal](18, 4) NOT NULL,
+                    [StockQuantity] [int] NOT NULL,
+                    [IsApproved] [bit] NOT NULL,
+                    [CreatedOnUtc] [datetime2](7) NOT NULL,
+                    [UpdatedOnUtc] [datetime2](7) NOT NULL
+                )
+                CREATE INDEX IX_MarketplaceVendorProduct_VendorId_ProductId ON [dbo].[MarketplaceVendorProduct] ([VendorId], [ProductId])
+            END
+        ");
+
+        await _dataProvider.ExecuteNonQueryAsync(@"
+            IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[MarketplaceVendorOrderLine]') AND type in (N'U'))
+            BEGIN
+                CREATE TABLE [dbo].[MarketplaceVendorOrderLine](
+                    [Id] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                    [OrderItemId] [int] NOT NULL,
+                    [OrderId] [int] NOT NULL,
+                    [VendorId] [int] NOT NULL,
+                    [ProductId] [int] NOT NULL,
+                    [Quantity] [int] NOT NULL,
+                    [UnitPrice] [decimal](18, 4) NOT NULL,
+                    [CommissionRateSnapshot] [decimal](18, 4) NOT NULL,
+                    [CommissionAmountSnapshot] [decimal](18, 4) NOT NULL,
+                    [NetAmountSnapshot] [decimal](18, 4) NOT NULL,
+                    [CreatedOnUtc] [datetime2](7) NOT NULL
+                )
+                CREATE INDEX IX_MarketplaceVendorOrderLine_VendorId ON [dbo].[MarketplaceVendorOrderLine] ([VendorId])
+                CREATE INDEX IX_MarketplaceVendorOrderLine_OrderItemId ON [dbo].[MarketplaceVendorOrderLine] ([OrderItemId])
+            END
+        ");
+
+        await _dataProvider.ExecuteNonQueryAsync(@"
+            IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[MarketplaceVendorBalance]') AND type in (N'U'))
+            BEGIN
+                CREATE TABLE [dbo].[MarketplaceVendorBalance](
+                    [Id] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                    [VendorId] [int] NOT NULL UNIQUE,
+                    [CurrentBalance] [decimal](18, 4) NOT NULL,
+                    [Pending] [decimal](18, 4) NOT NULL,
+                    [Hold] [decimal](18, 4) NOT NULL,
+                    [UpdatedOnUtc] [datetime2](7) NOT NULL
+                )
+            END
+        ");
+
+        await _dataProvider.ExecuteNonQueryAsync(@"
+            IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[MarketplaceVendorShippingAccount]') AND type in (N'U'))
+            BEGIN
+                CREATE TABLE [dbo].[MarketplaceVendorShippingAccount](
+                    [Id] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                    [VendorId] [int] NOT NULL,
+                    [Carrier] [nvarchar](100) NOT NULL,
+                    [ApiKey] [nvarchar](500) NULL,
+                    [IsActive] [bit] NOT NULL,
+                    [CreatedOnUtc] [datetime2](7) NOT NULL
+                )
+                CREATE INDEX IX_MarketplaceVendorShippingAccount_VendorId ON [dbo].[MarketplaceVendorShippingAccount] ([VendorId])
+            END
+        ");
+
+        await _dataProvider.ExecuteNonQueryAsync(@"
+            IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[MarketplaceVendorPayout]') AND type in (N'U'))
+            BEGIN
+                CREATE TABLE [dbo].[MarketplaceVendorPayout](
+                    [Id] [int] IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                    [VendorId] [int] NOT NULL,
+                    [Amount] [decimal](18, 4) NOT NULL,
+                    [Status] [int] NOT NULL,
+                    [RequestedOnUtc] [datetime2](7) NOT NULL,
+                    [ProcessedOnUtc] [datetime2](7) NULL,
+                    [ExternalRef] [nvarchar](255) NULL
+                )
+                CREATE INDEX IX_MarketplaceVendorPayout_VendorId ON [dbo].[MarketplaceVendorPayout] ([VendorId])
+            END
+        ");
+
+        // Install localization resources
+        await _localizationService.AddOrUpdateLocaleResourceAsync(new Dictionary<string, string>
+        {
+            ["Plugins.Marketplace.Core.Configure"] = "Marketplace Ayarları",
+            ["Plugins.Marketplace.Core.Configuration"] = "Marketplace Yapılandırması",
+            ["Plugins.Marketplace.Core.Vendors"] = "Satıcılar",
+            ["Plugins.Marketplace.Core.Vendor.AddNew"] = "Yeni Satıcı Ekle",
+            ["Plugins.Marketplace.Core.Vendor.Edit"] = "Satıcıyı Düzenle",
+            ["Plugins.Marketplace.Core.Vendor.Details"] = "Satıcı Detayları",
+            ["Plugins.Marketplace.Core.Vendor.Added"] = "Satıcı başarıyla eklendi",
+            ["Plugins.Marketplace.Core.Vendor.Updated"] = "Satıcı başarıyla güncellendi",
+            
+            // Menu items
+            ["Plugins.Marketplace.Core.Menu.Marketplace"] = "Marketplace",
+            ["Plugins.Marketplace.Core.Menu.Vendors"] = "Satıcılar",
+            
+            ["Plugins.Marketplace.Core.Fields.Name"] = "İsim",
+            ["Plugins.Marketplace.Core.Fields.Code"] = "Kod",
+            ["Plugins.Marketplace.Core.Fields.Status"] = "Durum",
+            ["Plugins.Marketplace.Core.Fields.ContactEmail"] = "İletişim E-postası",
+            ["Plugins.Marketplace.Core.Fields.Phone"] = "Telefon",
+            ["Plugins.Marketplace.Core.Fields.BankAccountName"] = "Banka Hesap Adı",
+            ["Plugins.Marketplace.Core.Fields.BankIban"] = "Banka IBAN",
+            ["Plugins.Marketplace.Core.Fields.CreatedOn"] = "Oluşturulma Tarihi",
+            ["Plugins.Marketplace.Core.Fields.UpdatedOn"] = "Güncellenme Tarihi",
+            ["Plugins.Marketplace.Core.Fields.Enabled"] = "Etkin",
+            ["Plugins.Marketplace.Core.Fields.RequireVendorApproval"] = "Satıcı Onayı Gerekli",
+            ["Plugins.Marketplace.Core.Fields.MinimumPayoutAmount"] = "Minimum Ödeme Tutarı"
+        });
+
+        await base.InstallAsync();
+    }
+
+    public override async Task UninstallAsync()
+    {
+        await _settingService.DeleteSettingAsync<MarketplaceCoreSettings>();
+        await _localizationService.DeleteLocaleResourcesAsync("Plugins.Marketplace.Core");
+
+        // Drop tables (WARNING: This will delete all data!)
+        await _dataProvider.ExecuteNonQueryAsync("DROP TABLE IF EXISTS [dbo].[VendorPayout]");
+        await _dataProvider.ExecuteNonQueryAsync("DROP TABLE IF EXISTS [dbo].[VendorShippingAccount]");
+        await _dataProvider.ExecuteNonQueryAsync("DROP TABLE IF EXISTS [dbo].[VendorBalance]");
+        await _dataProvider.ExecuteNonQueryAsync("DROP TABLE IF EXISTS [dbo].[VendorOrderLine]");
+        await _dataProvider.ExecuteNonQueryAsync("DROP TABLE IF EXISTS [dbo].[VendorProduct]");
+        await _dataProvider.ExecuteNonQueryAsync("DROP TABLE IF EXISTS [dbo].[Vendor]");
+
+        await base.UninstallAsync();
+    }
+}

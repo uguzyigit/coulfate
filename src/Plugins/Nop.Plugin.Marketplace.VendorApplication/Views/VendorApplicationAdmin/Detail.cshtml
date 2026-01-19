@@ -1,0 +1,284 @@
+@using Nop.Plugin.Marketplace.VendorApplication.Domain
+@model Nop.Plugin.Marketplace.VendorApplication.Models.Admin.ApplicationDetailModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Marketplace.VendorApplication.Admin.Detail.Title").Text;
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("Plugins.Marketplace.VendorApplication.Admin.Detail.Title") - @Model.ApplicationNumber
+    </h1>
+    <div class="float-right">
+        <a href="@Url.Action("List")" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            @T("Plugins.Marketplace.VendorApplication.Admin.Detail.BackToList")
+        </a>
+    </div>
+</div>
+
+<div class="content">
+    <div class="form-horizontal">
+        @* Status Badge *@
+        <div class="alert alert-@GetStatusAlertClass(Model.Status)">
+            <strong>@T("Plugins.Marketplace.VendorApplication.Admin.List.Status"):</strong> @Model.StatusName
+            @if (Model.ReviewedOnUtc.HasValue)
+            {
+                <span class="ml-3">| Reviewed: @Model.ReviewedOnUtc.Value.ToString("g")</span>
+            }
+        </div>
+
+        @* Application Info *@
+        <div class="card card-default">
+            <div class="card-header">
+                <i class="fas fa-info-circle"></i>
+                @T("Plugins.Marketplace.VendorApplication.Admin.Detail.ApplicationInfo")
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Application #:</dt>
+                            <dd class="col-sm-8">@Model.ApplicationNumber</dd>
+                            <dt class="col-sm-4">Submitted:</dt>
+                            <dd class="col-sm-8">@Model.CreatedOnUtc.ToString("g")</dd>
+                            <dt class="col-sm-4">IP Address:</dt>
+                            <dd class="col-sm-8">@Model.IpAddress</dd>
+                        </dl>
+                    </div>
+                    @if (Model.CreatedVendorId.HasValue)
+                    {
+                        <div class="col-md-6">
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i>
+                                Vendor Account Created (ID: @Model.CreatedVendorId)
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* Company Info *@
+        <div class="card card-default">
+            <div class="card-header">
+                <i class="fas fa-building"></i>
+                @T("Plugins.Marketplace.VendorApplication.Admin.Detail.CompanyInfo")
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">@T("Plugins.Marketplace.VendorApplication.Apply.CompanyName"):</dt>
+                    <dd class="col-sm-9">@Model.CompanyName</dd>
+                    <dt class="col-sm-3">@T("Plugins.Marketplace.VendorApplication.Apply.ContactPerson"):</dt>
+                    <dd class="col-sm-9">@Model.ContactPerson</dd>
+                    <dt class="col-sm-3">@T("Plugins.Marketplace.VendorApplication.Apply.Email"):</dt>
+                    <dd class="col-sm-9"><a href="mailto:@Model.Email">@Model.Email</a></dd>
+                    <dt class="col-sm-3">@T("Plugins.Marketplace.VendorApplication.Apply.Phone"):</dt>
+                    <dd class="col-sm-9">@Model.Phone</dd>
+                </dl>
+            </div>
+        </div>
+
+        @* Legal Info *@
+        <div class="card card-default">
+            <div class="card-header">
+                <i class="fas fa-gavel"></i>
+                @T("Plugins.Marketplace.VendorApplication.Admin.Detail.LegalInfo")
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">@T("Plugins.Marketplace.VendorApplication.Apply.TaxNumber"):</dt>
+                    <dd class="col-sm-9">@(Model.TaxNumber ?? "-")</dd>
+                    <dt class="col-sm-3">@T("Plugins.Marketplace.VendorApplication.Apply.TradeRegistryNumber"):</dt>
+                    <dd class="col-sm-9">@(Model.TradeRegistryNumber ?? "-")</dd>
+                </dl>
+            </div>
+        </div>
+
+        @* Address Info *@
+        <div class="card card-default">
+            <div class="card-header">
+                <i class="fas fa-map-marker-alt"></i>
+                @T("Plugins.Marketplace.VendorApplication.Admin.Detail.AddressInfo")
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">@T("Plugins.Marketplace.VendorApplication.Apply.Address"):</dt>
+                    <dd class="col-sm-9">@(Model.Address ?? "-")</dd>
+                    <dt class="col-sm-3">@T("Plugins.Marketplace.VendorApplication.Apply.City"):</dt>
+                    <dd class="col-sm-9">@(Model.City ?? "-")</dd>
+                    <dt class="col-sm-3">@T("Plugins.Marketplace.VendorApplication.Apply.District"):</dt>
+                    <dd class="col-sm-9">@(Model.District ?? "-")</dd>
+                    <dt class="col-sm-3">@T("Plugins.Marketplace.VendorApplication.Apply.PostalCode"):</dt>
+                    <dd class="col-sm-9">@(Model.PostalCode ?? "-")</dd>
+                </dl>
+            </div>
+        </div>
+
+        @* Bank Info *@
+        <div class="card card-default">
+            <div class="card-header">
+                <i class="fas fa-university"></i>
+                @T("Plugins.Marketplace.VendorApplication.Admin.Detail.BankInfo")
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">@T("Plugins.Marketplace.VendorApplication.Apply.BankAccountHolder"):</dt>
+                    <dd class="col-sm-9">@(Model.BankAccountHolder ?? "-")</dd>
+                    <dt class="col-sm-3">@T("Plugins.Marketplace.VendorApplication.Apply.BankIban"):</dt>
+                    <dd class="col-sm-9">@(Model.BankIban ?? "-")</dd>
+                    <dt class="col-sm-3">@T("Plugins.Marketplace.VendorApplication.Apply.BankName"):</dt>
+                    <dd class="col-sm-9">@(Model.BankName ?? "-")</dd>
+                </dl>
+            </div>
+        </div>
+
+        @* Documents *@
+        <div class="card card-default">
+            <div class="card-header">
+                <i class="fas fa-file-alt"></i>
+                @T("Plugins.Marketplace.VendorApplication.Admin.Detail.Documents")
+            </div>
+            <div class="card-body">
+                @if (Model.Documents.Any())
+                {
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Document Type</th>
+                                <th>File Name</th>
+                                <th>Size</th>
+                                <th>Uploaded</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var doc in Model.Documents)
+                            {
+                                <tr>
+                                    <td>@doc.DocumentTypeName</td>
+                                    <td>@doc.FileName</td>
+                                    <td>@doc.FileSizeFormatted</td>
+                                    <td>@doc.CreatedOnUtc.ToString("g")</td>
+                                    <td>
+                                        <a href="@Url.Action("DownloadDocument", new { id = doc.Id })" class="btn btn-sm btn-info" target="_blank">
+                                            <i class="fas fa-download"></i>
+                                            @T("Plugins.Marketplace.VendorApplication.Admin.Detail.DownloadDocument")
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p class="text-muted">@T("Plugins.Marketplace.VendorApplication.Admin.Detail.NoDocuments")</p>
+                }
+            </div>
+        </div>
+
+        @* Description *@
+        @if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <div class="card card-default">
+                <div class="card-header">
+                    <i class="fas fa-comment"></i>
+                    @T("Plugins.Marketplace.VendorApplication.Apply.Description")
+                </div>
+                <div class="card-body">
+                    <p>@Model.Description</p>
+                </div>
+            </div>
+        }
+
+        @* Admin Notes *@
+        <div class="card card-default">
+            <div class="card-header">
+                <i class="fas fa-sticky-note"></i>
+                @T("Plugins.Marketplace.VendorApplication.Admin.Detail.AdminNotes")
+            </div>
+            <div class="card-body">
+                <form asp-action="SaveNotes" method="post">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="form-group">
+                        <textarea name="adminNotes" class="form-control" rows="4">@Model.AdminNotes</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-secondary">
+                        <i class="fas fa-save"></i>
+                        @T("Plugins.Marketplace.VendorApplication.Admin.Detail.SaveNotes")
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        @* Actions *@
+        @if (Model.CanApprove || Model.CanReject)
+        {
+            <div class="card card-default">
+                <div class="card-header">
+                    <i class="fas fa-tasks"></i>
+                    Actions
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @if (Model.CanApprove)
+                        {
+                            <div class="col-md-6">
+                                <form asp-action="Approve" method="post">
+                                    <input type="hidden" name="id" value="@Model.Id" />
+                                    <button type="submit" class="btn btn-success btn-lg btn-block" onclick="return confirm('Are you sure you want to approve this application?');">
+                                        <i class="fas fa-check"></i>
+                                        @T("Plugins.Marketplace.VendorApplication.Admin.Detail.Approve")
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                        @if (Model.CanReject)
+                        {
+                            <div class="col-md-6">
+                                <form asp-action="Reject" method="post">
+                                    <input type="hidden" name="id" value="@Model.Id" />
+                                    <div class="form-group">
+                                        <label>@T("Plugins.Marketplace.VendorApplication.Admin.Detail.RejectionReason")</label>
+                                        <textarea name="rejectionReason" class="form-control" rows="2" placeholder="@T("Plugins.Marketplace.VendorApplication.Admin.Detail.RejectionReason.Hint")"></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-danger btn-lg btn-block" onclick="return confirm('Are you sure you want to reject this application?');">
+                                        <i class="fas fa-times"></i>
+                                        @T("Plugins.Marketplace.VendorApplication.Admin.Detail.Reject")
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* Rejection Reason (if rejected) *@
+        @if (Model.Status == VendorApplicationStatus.Rejected && !string.IsNullOrEmpty(Model.RejectionReason))
+        {
+            <div class="alert alert-danger">
+                <strong>@T("Plugins.Marketplace.VendorApplication.Admin.Detail.RejectionReason"):</strong>
+                @Model.RejectionReason
+            </div>
+        }
+    </div>
+</div>
+
+@functions {
+    string GetStatusAlertClass(VendorApplicationStatus status)
+    {
+        return status switch
+        {
+            VendorApplicationStatus.Pending => "warning",
+            VendorApplicationStatus.UnderReview => "info",
+            VendorApplicationStatus.DocumentsRequested => "secondary",
+            VendorApplicationStatus.Approved => "success",
+            VendorApplicationStatus.Rejected => "danger",
+            VendorApplicationStatus.Cancelled => "dark",
+            _ => "secondary"
+        };
+    }
+}

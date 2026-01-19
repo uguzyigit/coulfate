@@ -1,0 +1,14 @@
+{
+  "Group": "Marketplace",
+  "FriendlyName": "Marketplace.Core",
+  "SystemName": "Marketplace.Core",
+  "Version": "1.0.0",
+  "SupportedVersions": [ "4.90" ],
+  "Author": "Your Company",
+  "DisplayOrder": 1,
+  "FileName": "Nop.Plugin.Marketplace.Core.dll",
+  "Description": "Core marketplace functionality for managing vendors, products, orders, and payouts. Includes vendor management, product relationships, order tracking, balance management, and payout system.",
+  "LimitedToStores": [],
+  "LimitedToCustomerRoles": [],
+  "DependsOnSystemNames": []
+}
