@@ -202,9 +202,91 @@ CREATE TABLE IF NOT EXISTS `MarketplaceVendorTransaction` (
     CONSTRAINT `FK_MarketplaceVendorTransaction_Vendor`
         FOREIGN KEY (`VendorId`) REFERENCES `Vendor` (`Id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Shipping Provider Table (PTT Kargo, Aras Kargo, etc.)
+CREATE TABLE IF NOT EXISTS `MarketplaceShippingProvider` (
+    `Id` int NOT NULL AUTO_INCREMENT,
+    `Name` varchar(200) NOT NULL,
+    `SystemName` varchar(100) NOT NULL,
+    `SupportsMarketplaceContract` tinyint(1) NOT NULL DEFAULT 1,
+    `SupportsVendorContract` tinyint(1) NOT NULL DEFAULT 1,
+    `LogoUrl` varchar(500) NULL,
+    `DisplayOrder` int NOT NULL DEFAULT 0,
+    `IsActive` tinyint(1) NOT NULL DEFAULT 1,
+    PRIMARY KEY (`Id`),
+    UNIQUE KEY `IX_MarketplaceShippingProvider_SystemName` (`SystemName`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Vendor Shipping Preference Table
+CREATE TABLE IF NOT EXISTS `MarketplaceVendorShippingPreference` (
+    `Id` int NOT NULL AUTO_INCREMENT,
+    `VendorId` int NOT NULL,
+    `ShippingProviderId` int NOT NULL,
+    `UseMarketplaceContract` tinyint(1) NOT NULL DEFAULT 1,
+    `IsActive` tinyint(1) NOT NULL DEFAULT 1,
+    `CreatedOnUtc` datetime(6) NOT NULL,
+    `UpdatedOnUtc` datetime(6) NULL,
+    PRIMARY KEY (`Id`),
+    UNIQUE KEY `IX_MarketplaceVendorShippingPreference_VendorId` (`VendorId`),
+    KEY `IX_MarketplaceVendorShippingPreference_ShippingProviderId` (`ShippingProviderId`),
+    CONSTRAINT `FK_MarketplaceVendorShippingPreference_Vendor`
+        FOREIGN KEY (`VendorId`) REFERENCES `Vendor` (`Id`) ON DELETE CASCADE,
+    CONSTRAINT `FK_MarketplaceVendorShippingPreference_Provider`
+        FOREIGN KEY (`ShippingProviderId`) REFERENCES `MarketplaceShippingProvider` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Vendor Shipping Credential Table (for vendor's own contracts)
+CREATE TABLE IF NOT EXISTS `MarketplaceVendorShippingCredential` (
+    `Id` int NOT NULL AUTO_INCREMENT,
+    `VendorId` int NOT NULL,
+    `ShippingProviderId` int NOT NULL,
+    `CredentialKey` varchar(100) NOT NULL,
+    `CredentialValue` varchar(500) NULL,
+    `CreatedOnUtc` datetime(6) NOT NULL,
+    PRIMARY KEY (`Id`),
+    KEY `IX_MarketplaceVendorShippingCredential_VendorId` (`VendorId`),
+    KEY `IX_MarketplaceVendorShippingCredential_ProviderId` (`ShippingProviderId`),
+    CONSTRAINT `FK_MarketplaceVendorShippingCredential_Vendor`
+        FOREIGN KEY (`VendorId`) REFERENCES `Vendor` (`Id`) ON DELETE CASCADE,
+    CONSTRAINT `FK_MarketplaceVendorShippingCredential_Provider`
+        FOREIGN KEY (`ShippingProviderId`) REFERENCES `MarketplaceShippingProvider` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Marketplace Shipment Table (links to NopCommerce Shipment)
+CREATE TABLE IF NOT EXISTS `MarketplaceShipment` (
+    `Id` int NOT NULL AUTO_INCREMENT,
+    `NopShipmentId` int NOT NULL,
+    `VendorId` int NOT NULL,
+    `ShippingProviderId` int NOT NULL,
+    `TrackingNumber` varchar(50) NULL,
+    `BarcodeNumber` varchar(50) NULL,
+    `ExternalStatus` varchar(100) NULL,
+    `LastStatusUpdate` datetime(6) NULL,
+    `RawResponse` text NULL,
+    `IsReturn` tinyint(1) NOT NULL DEFAULT 0,
+    `CreatedOnUtc` datetime(6) NOT NULL,
+    PRIMARY KEY (`Id`),
+    KEY `IX_MarketplaceShipment_NopShipmentId` (`NopShipmentId`),
+    KEY `IX_MarketplaceShipment_VendorId` (`VendorId`),
+    KEY `IX_MarketplaceShipment_TrackingNumber` (`TrackingNumber`),
+    CONSTRAINT `FK_MarketplaceShipment_Vendor`
+        FOREIGN KEY (`VendorId`) REFERENCES `Vendor` (`Id`) ON DELETE CASCADE,
+    CONSTRAINT `FK_MarketplaceShipment_Provider`
+        FOREIGN KEY (`ShippingProviderId`) REFERENCES `MarketplaceShippingProvider` (`Id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Insert default shipping providers
+INSERT IGNORE INTO `MarketplaceShippingProvider` (`Name`, `SystemName`, `SupportsMarketplaceContract`, `SupportsVendorContract`, `DisplayOrder`, `IsActive`)
+VALUES ('PTT Kargo', 'Shipping.PttKargo', 1, 1, 1, 1);
 ";
 
     public const string DropTablesScript = @"
+-- Shipping tables (must be dropped first due to FK constraints)
+DROP TABLE IF EXISTS `MarketplaceShipment`;
+DROP TABLE IF EXISTS `MarketplaceVendorShippingCredential`;
+DROP TABLE IF EXISTS `MarketplaceVendorShippingPreference`;
+DROP TABLE IF EXISTS `MarketplaceShippingProvider`;
+
 DROP TABLE IF EXISTS `MarketplaceVendorTransaction`;
 DROP TABLE IF EXISTS `MarketplaceVendorCurrentAccount`;
 DROP TABLE IF EXISTS `MarketplaceOrderCommission`;

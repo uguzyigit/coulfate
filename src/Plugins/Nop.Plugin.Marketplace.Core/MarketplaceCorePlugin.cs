@@ -33,7 +33,7 @@ public class MarketplaceCorePlugin : BasePlugin
 
     public override string GetConfigurationPageUrl()
     {
-        return $"{_webHelper.GetStoreLocation()}Admin/MarketplaceVendor/Configure";
+        return $"{_webHelper.GetStoreLocation()}Admin/MarketplaceCoreAdmin/Configure";
     }
 
     public override async Task InstallAsync()
@@ -59,7 +59,11 @@ public class MarketplaceCorePlugin : BasePlugin
             ["Plugins.Marketplace.Core.Fields.Enabled"] = "Enabled",
             ["Plugins.Marketplace.Core.Fields.RequireVendorApproval"] = "Require Vendor Approval",
             ["Plugins.Marketplace.Core.Fields.MinimumPayoutAmount"] = "Minimum Payout Amount",
-            ["Plugins.Marketplace.Core.Fields.MaxPendingDays"] = "Maximum Pending Days"
+            ["Plugins.Marketplace.Core.Fields.MaxPendingDays"] = "Maximum Pending Days",
+            ["Plugins.Marketplace.Core.Menu.Marketplace"] = "Marketplace",
+            ["Enums.ProductSortingEnum.BestSelling"] = "En Çok Satan",
+            ["Enums.ProductSortingEnum.MostWishlisted"] = "En Favoriler",
+            ["Enums.ProductSortingEnum.MostReviewed"] = "En Çok Değerlendirilen"
         });
 
         await base.InstallAsync();
@@ -69,7 +73,7 @@ public class MarketplaceCorePlugin : BasePlugin
     {
         // Delete settings
         await _settingService.DeleteSettingAsync<MarketplaceCoreSettings>();
-        
+
         // Delete localization resources
         await _localizationService.DeleteLocaleResourcesAsync("Plugins.Marketplace.Core");
 

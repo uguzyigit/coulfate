@@ -1,0 +1,14 @@
+{
+  "Group": "Marketplace",
+  "FriendlyName": "Marketplace Performance",
+  "SystemName": "Marketplace.Performance",
+  "Version": "1.1.0",
+  "SupportedVersions": [ "4.90" ],
+  "Author": "Coulfate",
+  "DisplayOrder": 10,
+  "FileName": "Nop.Plugin.Marketplace.Performance.dll",
+  "Description": "Product performance scoring, interaction tracking, and vendor performance reports for marketplace. Provides automatic product ranking based on sales, conversions, and quality metrics.",
+  "LimitedToStores": [],
+  "LimitedToCustomerRoles": [],
+  "DependsOnSystemNames": [ "Marketplace.Core" ]
+}
