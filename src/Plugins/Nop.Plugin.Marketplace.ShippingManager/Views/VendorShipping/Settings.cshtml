@@ -1,0 +1,227 @@
+@model Nop.Plugin.Marketplace.ShippingManager.Models.Vendor.ShippingSettingsModel
+@using Nop.Plugin.Marketplace.ShippingManager.Models.Vendor
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = "Kargo Ayarları";
+    NopHtml.SetActiveMenuItemSystemName("Vendor.Shipping.Settings");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        <i class="fas fa-truck"></i> Kargo Ayarları
+    </h1>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+
+        @if (!Model.AvailableProviders.Any(p => p.Value != "0"))
+        {
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i>
+                <strong>Uyarı:</strong> Sistemde aktif kargo sağlayıcısı bulunamadı.
+                Lütfen yöneticiyle iletişime geçin.
+            </div>
+        }
+        else
+        {
+            <form asp-controller="VendorShipping" asp-action="SaveSettings" method="post" id="shippingSettingsForm">
+                <div class="card card-default">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-cog"></i> Kargo Tercihleri
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        @if (!Model.HasConfiguration)
+                        {
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                Henüz kargo ayarlarınızı yapmadınız. Lütfen bir kargo şirketi seçin ve tercihlerinizi belirleyin.
+                            </div>
+                        }
+
+                        <!-- Kargo Şirketi Seçimi -->
+                        <div class="form-group row">
+                            <label class="col-md-3 col-form-label">
+                                <strong>Kargo Şirketi</strong> <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-md-9">
+                                <select asp-for="ShippingProviderId" asp-items="Model.AvailableProviders"
+                                        class="form-control" id="shippingProvider">
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Provider Seçildikten Sonra Gösterilecek Alanlar -->
+                        <div id="providerOptionsSection" style="@(Model.ShippingProviderId > 0 ? "" : "display:none;")">
+
+                            <hr />
+
+                            <!-- Anlaşma Türü Seçimi -->
+                            <div class="form-group row">
+                                <label class="col-md-3 col-form-label">
+                                    <strong>Anlaşma Türü</strong> <span class="text-danger">*</span>
+                                </label>
+                                <div class="col-md-9">
+                                    <div class="custom-control custom-radio mb-3">
+                                        <input type="radio" id="contractMarketplace" name="UseMarketplaceContract" value="true"
+                                               class="custom-control-input" @(Model.UseMarketplaceContract ? "checked" : "") />
+                                        <label class="custom-control-label" for="contractMarketplace">
+                                            <strong>Pazaryeri Anlaşması</strong>
+                                            <p class="text-muted mb-0">
+                                                <small>Platformun kargo anlaşmasını kullanın. Kargo ücreti satıcı bakiyenizden düşülür.</small>
+                                            </p>
+                                        </label>
+                                    </div>
+                                    <div class="custom-control custom-radio">
+                                        <input type="radio" id="contractVendor" name="UseMarketplaceContract" value="false"
+                                               class="custom-control-input" @(!Model.UseMarketplaceContract ? "checked" : "") />
+                                        <label class="custom-control-label" for="contractVendor">
+                                            <strong>Kendi Anlaşmam</strong>
+                                            <p class="text-muted mb-0">
+                                                <small>Kendi kargo anlaşmanızı kullanın. API bilgilerinizi girmeniz gerekecek.</small>
+                                            </p>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- API Bilgileri (Kendi Anlaşma Seçildiğinde) -->
+                            <div id="credentialsSection" style="@(!Model.UseMarketplaceContract ? "" : "display:none;")">
+                                <hr />
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-shield-alt"></i>
+                                    <strong>Güvenlik:</strong> API bilgileriniz şifreli olarak saklanır ve sadece kargo işlemlerinde kullanılır.
+                                </div>
+
+                                <h5 class="mb-3"><i class="fas fa-key"></i> API Bilgileri</h5>
+
+                                <div id="credentialFieldsContainer">
+                                    @if (Model.Credentials != null && Model.Credentials.Any())
+                                    {
+                                        var index = 0;
+                                        foreach (var credential in Model.Credentials)
+                                        {
+                                            <div class="form-group row">
+                                                <label class="col-md-3 col-form-label">@credential.Label</label>
+                                                <div class="col-md-9">
+                                                    <input type="@(credential.IsPassword ? "password" : "text")"
+                                                           class="form-control"
+                                                           name="Credentials[@index].Value"
+                                                           placeholder="@credential.Placeholder"
+                                                           value="@credential.Value"
+                                                           autocomplete="off" />
+                                                    <input type="hidden" name="Credentials[@index].Key" value="@credential.Key" />
+                                                    <input type="hidden" name="Credentials[@index].Label" value="@credential.Label" />
+                                                    <input type="hidden" name="Credentials[@index].IsPassword" value="@credential.IsPassword.ToString().ToLower()" />
+                                                </div>
+                                            </div>
+                                            index++;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <!-- PTT Kargo için varsayılan alanlar -->
+                                        <div class="form-group row" id="defaultCredentialFields">
+                                            <div class="col-12">
+                                                <p class="text-muted">Kargo şirketi seçtikten sonra API bilgi alanları burada görünecektir.</p>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i> Kaydet
+                        </button>
+                    </div>
+                </div>
+            </form>
+        }
+    </div>
+</section>
+
+<script asp-location="Footer">
+$(document).ready(function() {
+
+    // Kargo şirketi değiştiğinde
+    $('#shippingProvider').change(function() {
+        var providerId = parseInt($(this).val());
+
+        if (providerId > 0) {
+            $('#providerOptionsSection').slideDown();
+            loadProviderCredentials(providerId);
+        } else {
+            $('#providerOptionsSection').slideUp();
+        }
+    });
+
+    // Anlaşma türü değiştiğinde
+    $('input[name="UseMarketplaceContract"]').change(function() {
+        var useMarketplace = $(this).val() === 'true';
+
+        if (useMarketplace) {
+            $('#credentialsSection').slideUp();
+        } else {
+            $('#credentialsSection').slideDown();
+            // Credential alanları yoksa yükle
+            if ($('#credentialFieldsContainer .form-group').length === 0 ||
+                $('#defaultCredentialFields').length > 0) {
+                var providerId = parseInt($('#shippingProvider').val());
+                if (providerId > 0) {
+                    loadProviderCredentials(providerId);
+                }
+            }
+        }
+    });
+
+    // Provider credential'larını yükle
+    function loadProviderCredentials(providerId) {
+        $.ajax({
+            url: '@Url.Action("GetProviderInfo", "VendorShipping")',
+            type: 'POST',
+            data: { providerId: providerId },
+            success: function(response) {
+                console.log('Provider info response:', response);
+
+                if (response.success && response.credentials && response.credentials.length > 0) {
+                    var html = '';
+                    $.each(response.credentials, function(index, cred) {
+                        var inputType = cred.isPassword ? 'password' : 'text';
+                        html += '<div class="form-group row">';
+                        html += '  <label class="col-md-3 col-form-label">' + cred.label + '</label>';
+                        html += '  <div class="col-md-9">';
+                        html += '    <input type="' + inputType + '" class="form-control" ';
+                        html += '           name="Credentials[' + index + '].Value" ';
+                        html += '           placeholder="' + (cred.placeholder || '') + '" ';
+                        html += '           value="' + (cred.value || '') + '" autocomplete="off" />';
+                        html += '    <input type="hidden" name="Credentials[' + index + '].Key" value="' + cred.key + '" />';
+                        html += '    <input type="hidden" name="Credentials[' + index + '].Label" value="' + cred.label + '" />';
+                        html += '    <input type="hidden" name="Credentials[' + index + '].IsPassword" value="' + cred.isPassword + '" />';
+                        html += '  </div>';
+                        html += '</div>';
+                    });
+                    $('#credentialFieldsContainer').html(html);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading provider info:', error);
+            }
+        });
+    }
+
+    // Sayfa yüklendiğinde mevcut provider varsa credential'ları yükle
+    var currentProviderId = parseInt($('#shippingProvider').val());
+    var useMarketplace = $('input[name="UseMarketplaceContract"]:checked').val() === 'true';
+
+    if (currentProviderId > 0 && !useMarketplace) {
+        // Eğer credential alanları boşsa yükle
+        if ($('#credentialFieldsContainer .form-group').length <= 1) {
+            loadProviderCredentials(currentProviderId);
+        }
+    }
+});
+</script>

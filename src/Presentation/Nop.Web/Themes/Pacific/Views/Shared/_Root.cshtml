@@ -1,0 +1,28 @@
+@{
+    Layout = "_Root.Head";
+}
+@await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.BodyStartHtmlTagAfter })
+@{ await Html.RenderPartialAsync("_Notifications"); }
+@{ await Html.RenderPartialAsync("_JavaScriptDisabledWarning"); }
+<div class="master-wrapper-page pacific-wrapper">
+    @await Component.InvokeAsync(typeof(AdminHeaderLinksViewComponent))
+    @{ await Html.RenderPartialAsync("_Header"); }
+    @* Menu is included in Pacific header, no separate header-menu div needed *@
+    <main class="master-wrapper-content pacific-main-content" id="main">
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.ContentBefore })
+
+        @if (IsSectionDefined("Breadcrumb"))
+        {
+            <div class="pacific-container">
+                @RenderSection("Breadcrumb")
+            </div>
+        }
+        <div class="master-column-wrapper">
+            @RenderBody()
+        </div>
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.ContentAfter })
+    </main>
+    @await Component.InvokeAsync(typeof(FooterViewComponent))
+</div>
+@await Component.InvokeAsync(typeof(EuCookieLawViewComponent))
+@await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.BodyEndHtmlTagBefore })

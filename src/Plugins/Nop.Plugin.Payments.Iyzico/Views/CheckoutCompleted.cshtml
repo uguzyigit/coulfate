@@ -1,0 +1,53 @@
+@{
+    var orderId = ViewBag.OrderId;
+    var orderGuid = ViewBag.OrderGuid;
+    var cardholderName = ViewBag.CardholderName;
+    var cardNumber = ViewBag.CardNumber;
+    var expireMonth = ViewBag.ExpireMonth;
+    var expireYear = ViewBag.ExpireYear;
+    var cardCode = ViewBag.CardCode;
+}
+
+<div id="iyzico-3ds-container" style="text-align: center; margin: 20px 0;">
+    <h3>Ödemeniz işleniyor...</h3>
+    <p>Lütfen bekleyin, güvenli ödeme sayfasına yönlendiriliyorsunuz...</p>
+    <div class="spinner-border" role="status">
+        <span class="sr-only">Yükleniyor...</span>
+    </div>
+</div>
+
+<script type="text/javascript">
+(function() {
+    // Auto-redirect to 3DS
+    var processUrl = '@Url.RouteUrl("Plugin.Payments.Iyzico.ProcessPayment")';
+    
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = processUrl;
+    
+    var fields = {
+        'orderId': '@orderId',
+        'orderGuid': '@orderGuid',
+        'cardholderName': '@cardholderName',
+        'cardNumber': '@cardNumber',
+        'expireMonth': '@expireMonth',
+        'expireYear': '@expireYear',
+        'cardCode': '@cardCode'
+    };
+    
+    for (var key in fields) {
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = fields[key];
+        form.appendChild(input);
+    }
+    
+    document.body.appendChild(form);
+    
+    // Submit after 1 second
+    setTimeout(function() {
+        form.submit();
+    }, 1000);
+})();
+</script>

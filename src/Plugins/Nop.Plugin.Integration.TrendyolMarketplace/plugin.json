@@ -1,0 +1,14 @@
+{
+  "Group": "Integration",
+  "FriendlyName": "Trendyol Marketplace Integration",
+  "SystemName": "Integration.TrendyolMarketplace",
+  "Version": "1.0.0",
+  "SupportedVersions": ["4.90"],
+  "Author": "Coulfate",
+  "DisplayOrder": 1,
+  "FileName": "Nop.Plugin.Integration.TrendyolMarketplace.dll",
+  "Description": "Trendyol API entegrasyonu - Ürün import, stok ve fiyat senkronizasyonu. Multi-tenant vendor desteği ile her vendor kendi Trendyol hesabını bağlayabilir.",
+  "LimitedToStores": [],
+  "LimitedToCustomerRoles": [],
+  "DependsOnSystemNames": ["Marketplace.Core"]
+}

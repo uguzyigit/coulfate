@@ -1,0 +1,187 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Nop.Core;
+using Nop.Data;
+using Nop.Services.Catalog;
+using Nop.Services.Orders;
+using Nop.Services.Configuration;
+using Nop.Plugin.Marketplace.Commission.Domain;
+
+namespace Nop.Plugin.Marketplace.Commission.Services;
+
+public class CommissionService : ICommissionService
+{
+    private readonly IRepository<CategoryCommission> _categoryCommissionRepository;
+    private readonly IRepository<ProductCommission> _productCommissionRepository;
+    private readonly IRepository<OrderCommission> _orderCommissionRepository;
+    private readonly ICategoryService _categoryService;
+    private readonly IProductService _productService;
+    private readonly IOrderService _orderService;
+    private readonly ISettingService _settingService;
+
+    public CommissionService(
+        IRepository<CategoryCommission> categoryCommissionRepository,
+        IRepository<ProductCommission> productCommissionRepository,
+        IRepository<OrderCommission> orderCommissionRepository,
+        ICategoryService categoryService,
+        IProductService productService,
+        IOrderService orderService,
+        ISettingService settingService)
+    {
+        _categoryCommissionRepository = categoryCommissionRepository;
+        _productCommissionRepository = productCommissionRepository;
+        _orderCommissionRepository = orderCommissionRepository;
+        _categoryService = categoryService;
+        _productService = productService;
+        _orderService = orderService;
+        _settingService = settingService;
+    }
+
+    public virtual async Task<decimal> GetCategoryCommissionRateAsync(int categoryId)
+    {
+        var commission = await _categoryCommissionRepository.Table
+            .Where(c => c.CategoryId == categoryId && c.IsActive)
+            .FirstOrDefaultAsync();
+
+        if (commission != null)
+            return commission.Rate;
+
+        var category = await _categoryService.GetCategoryByIdAsync(categoryId);
+        if (category?.ParentCategoryId > 0)
+            return await GetCategoryCommissionRateAsync(category.ParentCategoryId);
+
+        var settings = await _settingService.LoadSettingAsync<CommissionSettings>();
+        return settings.DefaultCommissionRate;
+    }
+
+    public virtual async Task<decimal> GetProductCommissionRateAsync(int productId)
+    {
+        var commission = await _productCommissionRepository.Table
+            .Where(c => c.ProductId == productId && c.IsActive)
+            .FirstOrDefaultAsync();
+
+        if (commission != null && (!commission.ExpiresOnUtc.HasValue || commission.ExpiresOnUtc.Value > DateTime.UtcNow))
+            return commission.Rate;
+
+        return 0;
+    }
+
+    public virtual async Task<CategoryCommission> SetCategoryCommissionRateAsync(int categoryId, decimal rate)
+    {
+        var existing = await _categoryCommissionRepository.Table
+            .FirstOrDefaultAsync(c => c.CategoryId == categoryId);
+
+        if (existing != null)
+        {
+            existing.Rate = rate;
+            existing.UpdatedOnUtc = DateTime.UtcNow;
+            await _categoryCommissionRepository.UpdateAsync(existing);
+            return existing;
+        }
+
+        var commission = new CategoryCommission
+        {
+            CategoryId = categoryId,
+            Rate = rate,
+            IsActive = true,
+            CreatedOnUtc = DateTime.UtcNow
+        };
+
+        await _categoryCommissionRepository.InsertAsync(commission);
+        return commission;
+    }
+
+    public virtual async Task<ProductCommission> SetProductCommissionRateAsync(int productId, decimal rate)
+    {
+        var existing = await _productCommissionRepository.Table
+            .FirstOrDefaultAsync(c => c.ProductId == productId);
+
+        if (existing != null)
+        {
+            existing.Rate = rate;
+            existing.CreatedOnUtc = DateTime.UtcNow;
+            await _productCommissionRepository.UpdateAsync(existing);
+            return existing;
+        }
+
+        var commission = new ProductCommission
+        {
+            ProductId = productId,
+            Rate = rate,
+            IsActive = true,
+            CreatedOnUtc = DateTime.UtcNow
+        };
+
+        await _productCommissionRepository.InsertAsync(commission);
+        return commission;
+    }
+
+    public virtual async Task<decimal> CalculateCommissionRateForProductAsync(int productId)
+    {
+        var productRate = await GetProductCommissionRateAsync(productId);
+        if (productRate > 0)
+            return productRate;
+
+        var product = await _productService.GetProductByIdAsync(productId);
+        if (product == null)
+            return 0;
+
+        var productCategories = await _categoryService.GetProductCategoriesByProductIdAsync(productId);
+        var leafCategory = productCategories.OrderByDescending(pc => pc.DisplayOrder).FirstOrDefault();
+
+        if (leafCategory != null)
+            return await GetCategoryCommissionRateAsync(leafCategory.CategoryId);
+
+        var settings = await _settingService.LoadSettingAsync<CommissionSettings>();
+        return settings.DefaultCommissionRate;
+    }
+
+    public virtual async Task<OrderCommission> CalculateAndCreateCommissionAsync(int orderItemId)
+    {
+        var orderItem = await _orderService.GetOrderItemByIdAsync(orderItemId);
+        if (orderItem == null)
+            return null;
+
+        var product = await _productService.GetProductByIdAsync(orderItem.ProductId);
+        if (product?.VendorId == 0)
+            return null;
+
+        var order = await _orderService.GetOrderByIdAsync(orderItem.OrderId);
+        var settings = await _settingService.LoadSettingAsync<CommissionSettings>();
+
+        var productPrice = orderItem.PriceInclTax;
+        var discountAmount = orderItem.DiscountAmountInclTax;
+        var netPrice = productPrice - discountAmount;
+
+        var commissionRate = await CalculateCommissionRateForProductAsync(product.Id);
+        var commissionAmount = netPrice * (commissionRate / 100);
+        var taxWithholding = netPrice * settings.TaxWithholdingRate;
+        var vendorNetAmount = netPrice - commissionAmount - settings.MarketplaceFeePerOrder - taxWithholding;
+
+        var productCategories = await _categoryService.GetProductCategoriesByProductIdAsync(product.Id);
+        var leafCategoryId = productCategories.OrderByDescending(pc => pc.DisplayOrder).FirstOrDefault()?.CategoryId ?? 0;
+
+        var orderCommission = new OrderCommission
+        {
+            OrderId = order.Id,
+            OrderItemId = orderItem.Id,
+            VendorId = product.VendorId,
+            ProductId = product.Id,
+            CategoryId = leafCategoryId,
+            Quantity = orderItem.Quantity,
+            ProductPrice = productPrice,
+            DiscountAmount = discountAmount,
+            NetPrice = netPrice,
+            CommissionRate = commissionRate,
+            CommissionAmount = commissionAmount,
+            MarketplaceFee = settings.MarketplaceFeePerOrder,
+            TaxWithholding = taxWithholding,
+            VendorNetAmount = vendorNetAmount,
+            CreatedOnUtc = DateTime.UtcNow
+        };
+
+        await _orderCommissionRepository.InsertAsync(orderCommission);
+        return orderCommission;
+    }
+}

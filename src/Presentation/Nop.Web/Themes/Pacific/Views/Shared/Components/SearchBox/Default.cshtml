@@ -1,0 +1,131 @@
+@model SearchBoxModel
+
+@{
+    const string categoryFormName = "cid";
+    const string termFormName = "q";
+    const string searchBoxId = "small-searchterms";
+}
+
+<form asp-route="ProductSearch" method="get" id="small-search-box-form" class="pacific-search-form">
+    @if (Model.ShowSearchBox)
+    {
+        @if(Model.ShowSearchBoxCategories)
+        {
+            <select asp-for="SearchCategoryId" name="@categoryFormName" asp-items="Model.AvailableCategories" class="pacific-search-category search-box-category"></select>
+            <script asp-location="Footer">
+                $(function () {
+                    $('#@Html.IdFor(m => m.SearchCategoryId)').on('change', function () {
+                        $('#@searchBoxId').focus();
+                    });
+                });
+            </script>
+        }
+        <input type="text"
+               class="pacific-search-input search-box-text"
+               id="@searchBoxId"
+               autocomplete="off"
+               name="@termFormName"
+               placeholder="@T("Search.SearchBox.Tooltip")"
+               aria-label="@T("Search.SearchBox.Text.Label")" />
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.SearchBoxBeforeSearchButton, additionalData = Model })
+        <button type="submit" class="pacific-search-btn search-box-button" aria-label="@T("Search.Button")">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+        </button>
+
+        <script asp-location="Footer">
+            $("#small-search-box-form").on("submit", function (event) {
+
+                event.preventDefault();
+
+                @if(Model.SearchTermMinimumLength > 0)
+                {
+                    <text>
+                    if ($("#@searchBoxId").val() == "") {
+                        alert('@Html.Raw(JavaScriptEncoder.Default.Encode(T("Search.EnterSearchTerms").Text))');
+                        $("#@searchBoxId").focus();
+                        return;
+                    }
+                    </text>
+                }
+
+                var form = document.getElementById('small-search-box-form');
+                var formData = new FormData(form);
+
+                @if(Model.ShowSearchBoxCategories)
+                {
+                    <text>
+                    var selectedCategory = formData.get('@categoryFormName');
+                    if (selectedCategory && selectedCategory != '0') {
+                        formData.append('advs', true);
+                        formData.append('isc', true);
+                    }
+                    </text>
+                }
+
+                window.location.href = `@Url.RouteUrl("ProductSearch")?${new URLSearchParams(formData).toString()}`;
+            });
+        </script>
+
+        @if (Model.AutoCompleteEnabled)
+        {
+            <script asp-location="Footer">
+                $(function() {
+                    var cache = new Map();
+                    var showLinkToResultSearch;
+                    var searchText;
+
+                    $('#@searchBoxId').autocomplete({
+                        delay: 500,
+                        minLength: @Model.SearchTermMinimumLength,
+                        source: function (request, response) {
+                            var term = request.term && request.term.trim().toLowerCase();
+                            var categoryElement = $('#@Html.IdFor(m => m.SearchCategoryId)');
+                            var categoryId = categoryElement.length == 0 ? 0 : categoryElement.val()
+
+                            var query = { term, categoryId };
+                            var cacheKey = JSON.stringify(query);
+
+                            if (cache.has(cacheKey)) {
+                                response(cache.get(cacheKey));
+                                return;
+                            }
+
+                            $.getJSON('@Url.RouteUrl("ProductSearchAutoComplete")', query, function (data, status, xhr) {
+                                cache.set(cacheKey, data);
+                                response(data);
+                            });
+                        },
+                        appendTo: '.pacific-search',
+                        select: function(event, ui) {
+                            $("#@searchBoxId").val(ui.item.label);
+                            setLocation(ui.item.producturl);
+                            return false;
+                        },
+                        open: function(event, ui) {
+                            if (showLinkToResultSearch) {
+                                searchText = document.getElementById("@searchBoxId").value;
+                                $(".ui-autocomplete").append("<li class=\"ui-menu-item\" role=\"presentation\"><a href=\"/search?q=" + searchText + "\">@T("Search.SearchBox.SearchPageLink")</a></li>");
+                            }
+                        }
+                    })
+                    .focus(function () {
+                        $(this).autocomplete('search', $(this).val());
+                    })
+                    .data("ui-autocomplete")._renderItem = function(ul, item) {
+                        var t = item.label;
+                        showLinkToResultSearch = item.showlinktoresultsearch;
+                        t = htmlEncode(t);
+                        imageWidth = '@(Model.AutoCompleteSearchThumbPictureSize)';
+                        return $("<li class='pacific-autocomplete-item'></li>")
+                            .data("item.autocomplete", item)
+                            .append("<a class='pacific-autocomplete-link'>@(Model.ShowProductImagesInSearchAutoComplete ? Html.Raw("<img class='pacific-autocomplete-img' src='\" + item.productpictureurl + \"' width='\" + imageWidth + \"'>") : null)<span class='pacific-autocomplete-text'>" + t + "</span></a>")
+                            .appendTo(ul);
+                    };
+                });
+            </script>
+        }
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.SearchBox, additionalData = Model })
+    }
+</form>

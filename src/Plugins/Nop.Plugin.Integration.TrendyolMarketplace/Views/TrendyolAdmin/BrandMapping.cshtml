@@ -1,0 +1,158 @@
+@model BrandMappingSearchModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Integration.TrendyolMarketplace.BrandMapping.Title").Text;
+    NopHtml.SetActiveMenuItemSystemName("Marketplace.Trendyol.BrandMapping");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("Plugins.Integration.TrendyolMarketplace.BrandMapping.Title")
+    </h1>
+    <div class="float-right">
+        <button type="button" class="btn btn-success" id="btnSyncBrands">
+            <i class="fas fa-sync-alt"></i>
+            @T("Plugins.Integration.TrendyolMarketplace.Button.SyncBrands")
+        </button>
+        <button type="button" class="btn btn-info" id="btnAutoMap">
+            <i class="fas fa-magic"></i>
+            @T("Plugins.Integration.TrendyolMarketplace.Button.AutoMap")
+        </button>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-default card-search">
+            <div class="card-body">
+                <div class="row align-items-end">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>@T("Plugins.Integration.TrendyolMarketplace.BrandMapping.SearchTrendyolBrand")</label>
+                            <input type="text" id="SearchTrendyolBrand" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>@T("Plugins.Integration.TrendyolMarketplace.BrandMapping.UnmappedOnly")</label>
+                            <select id="UnmappedOnly" class="form-control">
+                                <option value="">@T("Plugins.Integration.TrendyolMarketplace.Common.All")</option>
+                                <option value="true">@T("Plugins.Integration.TrendyolMarketplace.BrandMapping.UnmappedOnly")</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div>
+                                <button type="button" class="btn btn-primary btn-block" id="btnSearch">
+                                    <i class="fas fa-search"></i>
+                                    @T("Plugins.Integration.TrendyolMarketplace.Common.Search")
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-default">
+            <div class="card-body">
+                @await Html.PartialAsync("Table", new DataTablesModel
+                {
+                    Name = "brands-grid",
+                    UrlRead = new DataUrl("BrandMappingList", "TrendyolAdmin", null),
+                    SearchButtonId = "btnSearch",
+                    Filters = new List<FilterParameter>
+                    {
+                        new FilterParameter(nameof(Model.SearchTrendyolBrand)),
+                        new FilterParameter(nameof(Model.UnmappedOnly))
+                    },
+                    Length = Model.PageSize,
+                    LengthMenu = Model.AvailablePageSizes,
+                    ColumnCollection = new List<ColumnProperty>
+                    {
+                        new ColumnProperty(nameof(BrandMappingModel.TrendyolBrandName))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.BrandMapping.TrendyolBrand").Text,
+                            Width = "200"
+                        },
+                        new ColumnProperty(nameof(BrandMappingModel.TrendyolBrandId))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.BrandMapping.TrendyolId").Text,
+                            Width = "100"
+                        },
+                        new ColumnProperty(nameof(BrandMappingModel.NopManufacturerName))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.BrandMapping.NopManufacturer").Text,
+                            Width = "200"
+                        },
+                        new ColumnProperty(nameof(BrandMappingModel.IsAutoMapped))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.BrandMapping.IsAutoMapped").Text,
+                            Width = "80",
+                            ClassName = NopColumnClassDefaults.CenterAll,
+                            Render = new RenderBoolean()
+                        },
+                        new ColumnProperty(nameof(BrandMappingModel.Id))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Common.Action").Text,
+                            Width = "100",
+                            ClassName = NopColumnClassDefaults.Button,
+                            Render = new RenderCustom("renderEditButton")
+                        }
+                    }
+                })
+            </div>
+        </div>
+    </div>
+</section>
+
+<script asp-location="Footer">
+    function renderEditButton(data, type, row) {
+        return '<button type="button" class="btn btn-sm btn-primary" onclick="editMapping(' + row.Id + ', ' + (row.NopManufacturerId || 'null') + ')"><i class="fas fa-edit"></i></button>';
+    }
+
+    function editMapping(id, currentNopManufacturerId) {
+        var newManufacturerId = prompt('@T("Plugins.Integration.TrendyolMarketplace.BrandMapping.EnterManufacturerId"):', currentNopManufacturerId || '');
+        if (newManufacturerId !== null) {
+            $.ajax({
+                url: '@Url.Action("UpdateBrandMapping", "TrendyolAdmin")',
+                type: 'POST',
+                data: { id: id, nopManufacturerId: newManufacturerId === '0' ? null : newManufacturerId },
+                success: function(data) {
+                    if (data.success) {
+                        displayBarNotification('@T("Plugins.Integration.TrendyolMarketplace.Common.MappingUpdated")', 0, 5000);
+                        updateTable('#brands-grid');
+                    } else {
+                        displayBarNotification(data.message, 1, 0);
+                    }
+                }
+            });
+        }
+    }
+
+    $(document).ready(function () {
+        $('#btnSyncBrands').click(function () {
+            var btn = $(this);
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> @T("Plugins.Integration.TrendyolMarketplace.Dashboard.Syncing")...');
+
+            $.ajax({
+                url: '@Url.Action("SyncBrands", "TrendyolAdmin")',
+                type: 'POST',
+                success: function (data) {
+                    if (data.success) {
+                        displayBarNotification(data.message, 0, 5000);
+                        updateTable('#brands-grid');
+                    } else {
+                        displayBarNotification(data.message, 1, 0);
+                    }
+                },
+                complete: function () {
+                    btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> @T("Plugins.Integration.TrendyolMarketplace.Button.SyncBrands")');
+                }
+            });
+        });
+    });
+</script>

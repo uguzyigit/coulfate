@@ -1,0 +1,91 @@
+@model Nop.Plugin.Marketplace.Commission.Models.ConfigurationModel
+
+@{
+    Layout = "_ConfigurePlugin";
+    ViewBag.PageTitle = T("Plugins.Marketplace.Commission.Configure").Text;
+}
+
+<form asp-controller="Commission" asp-action="Configure" asp-area="Admin" method="post">
+    <div class="cards-group">
+        <div class="card card-default">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-cogs"></i>
+                    @T("Plugins.Marketplace.Commission.Configure")
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="DefaultCommissionRate" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="DefaultCommissionRate" />
+                        <span asp-validation-for="DefaultCommissionRate"></span>
+                        <nop-hint asp-for="DefaultCommissionRate" />
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="MarketplaceFeePerOrder" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="MarketplaceFeePerOrder" />
+                        <span asp-validation-for="MarketplaceFeePerOrder"></span>
+                        <nop-hint asp-for="MarketplaceFeePerOrder" />
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="TaxWithholdingRate" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="TaxWithholdingRate" />
+                        <span asp-validation-for="TaxWithholdingRate"></span>
+                        <nop-hint asp-for="TaxWithholdingRate" />
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="CalculateOnDiscountedPrice" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="CalculateOnDiscountedPrice" />
+                        <span asp-validation-for="CalculateOnDiscountedPrice"></span>
+                        <nop-hint asp-for="CalculateOnDiscountedPrice" />
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-calculator"></i> @T("Plugins.Marketplace.Commission.CalculationExample")</h5>
+                    <pre>
+@T("Plugins.Marketplace.Commission.CalculationExample.ProductPrice"): 1000 TL
+@T("Plugins.Marketplace.Commission.CalculationExample.Discount"): -100 TL
+─────────────────────────────────
+@T("Plugins.Marketplace.Commission.CalculationExample.NetPrice"): 900 TL
+
+@T("Plugins.Marketplace.Commission.CalculationExample.Commission") (15%): -135 TL
+@T("Plugins.Marketplace.Commission.CalculationExample.TaxWithholding") (1%): -9 TL
+@T("Plugins.Marketplace.Commission.CalculationExample.MarketplaceFee"): -5 TL
+─────────────────────────────────
+@T("Plugins.Marketplace.Commission.CalculationExample.VendorNet"): 751 TL
+                    </pre>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button type="submit" name="save" class="btn btn-primary">
+                    <i class="far fa-save"></i>
+                    @T("Admin.Common.Save")
+                </button>
+                
+                <a asp-controller="Commission" asp-action="CategoryCommissions" asp-area="Admin" class="btn btn-info">
+                    <i class="fas fa-percentage"></i>
+                    @T("Plugins.Marketplace.Commission.CategoryCommissions")
+                </a>
+            </div>
+        </div>
+    </div>
+</form>

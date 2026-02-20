@@ -1,0 +1,196 @@
+using System;
+using System.ComponentModel.DataAnnotations.Schema;
+using Nop.Core;
+using Nop.Core.Domain.Vendors;
+
+namespace Nop.Plugin.Marketplace.VendorExtensions.Domain;
+
+/// <summary>
+/// Represents vendor current account (cari hesap)
+/// </summary>
+[Table("MarketplaceVendorCurrentAccount")]
+public partial class VendorCurrentAccount : BaseEntity
+{
+    /// <summary>
+    /// Gets or sets the vendor identifier
+    /// </summary>
+    public int VendorId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the current balance 
+    /// Positive = vendor has credit (platform owes money to vendor)
+    /// Negative = vendor has debit (vendor owes money to platform)
+    /// </summary>
+    public decimal Balance { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total credit amount (all time)
+    /// </summary>
+    public decimal TotalCredit { get; set; }
+
+    /// <summary>
+    /// Gets or sets the total debit amount (all time)
+    /// </summary>
+    public decimal TotalDebit { get; set; }
+
+    /// <summary>
+    /// Gets or sets the date when account was last updated
+    /// </summary>
+    public DateTime LastUpdatedUtc { get; set; }
+
+    /// <summary>
+    /// Gets or sets the vendor (navigation property)
+    /// </summary>
+    public virtual Vendor? Vendor { get; set; }
+}
+
+/// <summary>
+/// Transaction types for vendor account
+/// </summary>
+public enum VendorTransactionType
+{
+    /// <summary>
+    /// Order revenue (satış geliri) - CREDIT (+)
+    /// When order is placed, vendor earns money
+    /// </summary>
+    OrderRevenue = 1,
+
+    /// <summary>
+    /// Commission deduction (komisyon) - DEBIT (-)
+    /// Platform commission on sales
+    /// </summary>
+    Commission = 2,
+
+    /// <summary>
+    /// Marketplace transaction fee (pazaryeri işlem ücreti) - DEBIT (-)
+    /// Fixed fee per successful order
+    /// </summary>
+    MarketplaceFee = 3,
+
+    /// <summary>
+    /// Tax withholding (stopaj %1) - DEBIT (-)
+    /// Government mandated tax withholding
+    /// </summary>
+    TaxWithholding = 4,
+
+    /// <summary>
+    /// Shipping cost (kargo ücreti) - DEBIT (-)
+    /// When vendor uses platform's shipping agreement
+    /// </summary>
+    ShippingCost = 5,
+
+    /// <summary>
+    /// Return shipping cost (iade kargo) - DEBIT (-)
+    /// Cost of return shipping, paid by vendor
+    /// </summary>
+    ReturnShippingCost = 6,
+
+    /// <summary>
+    /// Late shipment penalty (geç gönderi cezası) - DEBIT (-)
+    /// Penalty for not shipping within committed timeframe
+    /// </summary>
+    LatePenalty = 7,
+
+    /// <summary>
+    /// Cancellation penalty (iptal cezası) - DEBIT (-)
+    /// Penalty when vendor cancels an order
+    /// </summary>
+    CancellationPenalty = 8,
+
+    /// <summary>
+    /// Manual adjustment (manuel düzeltme) - CREDIT or DEBIT
+    /// Admin manual correction
+    /// </summary>
+    ManualAdjustment = 9,
+
+    /// <summary>
+    /// Refund (iade) - DEBIT (-)
+    /// When order is refunded to customer
+    /// </summary>
+    Refund = 10,
+
+    /// <summary>
+    /// Payment received (ödeme alındı) - DEBIT (-)
+    /// When Iyzico pays out to vendor (reduces balance)
+    /// </summary>
+    PaymentReceived = 11,
+
+    /// <summary>
+    /// Discount given by vendor - DEBIT (-)
+    /// Vendor-sponsored discount
+    /// </summary>
+    VendorDiscount = 12,
+
+    /// <summary>
+    /// Discount given by platform - No effect on vendor
+    /// Platform absorbs the cost
+    /// </summary>
+    PlatformDiscount = 13
+}
+
+/// <summary>
+/// Represents a transaction in vendor's current account
+/// Every financial movement creates a transaction record
+/// </summary>
+[Table("MarketplaceVendorTransaction")]
+public partial class VendorTransaction : BaseEntity
+{
+    /// <summary>
+    /// Gets or sets the vendor identifier
+    /// </summary>
+    public int VendorId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the related order identifier (if applicable)
+    /// </summary>
+    public int? OrderId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the related order item identifier (if applicable)
+    /// </summary>
+    public int? OrderItemId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the transaction type
+    /// </summary>
+    public VendorTransactionType Type { get; set; }
+
+    /// <summary>
+    /// Gets or sets the transaction amount 
+    /// Positive for credit (vendor earns)
+    /// Negative for debit (vendor pays/owes)
+    /// </summary>
+    public decimal Amount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the balance after this transaction
+    /// Snapshot of account balance after applying this transaction
+    /// </summary>
+    public decimal BalanceAfter { get; set; }
+
+    /// <summary>
+    /// Gets or sets the description
+    /// </summary>
+    public string? Description { get; set; }
+
+    /// <summary>
+    /// Gets or sets the reference number (invoice number, payment ID, tracking number, etc.)
+    /// </summary>
+    public string? ReferenceNumber { get; set; }
+
+    /// <summary>
+    /// Gets or sets additional metadata (JSON)
+    /// Can store extra info like: {"invoiceId": 123, "trackingNumber": "ABC123"}
+    /// </summary>
+    public string? Metadata { get; set; }
+
+    /// <summary>
+    /// Gets or sets the date when transaction was created
+    /// </summary>
+    public DateTime CreatedOnUtc { get; set; }
+
+    /// <summary>
+    /// Gets or sets the vendor (navigation property)
+    /// </summary>
+    public virtual Vendor? Vendor { get; set; }
+}

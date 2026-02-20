@@ -1,0 +1,11 @@
+/* ========================================
+   PACIFIC THEME - Sun Color Preset
+   #f39c12
+   ======================================== */
+
+:root {
+  --pacific-primary: #f39c12;
+  --pacific-primary-hover: #d68910;
+  --pacific-primary-light: #f5b041;
+  --pacific-primary-rgb: 243, 156, 18;
+}

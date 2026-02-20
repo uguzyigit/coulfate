@@ -1,0 +1,14 @@
+{
+  "Group": "Marketplace",
+  "FriendlyName": "Marketplace Commission Management",
+  "SystemName": "Marketplace.Commission",
+  "Version": "1.0.0",
+  "SupportedVersions": [ "4.90" ],
+  "Author": "Coulfate",
+  "DisplayOrder": 2,
+  "FileName": "Nop.Plugin.Marketplace.Commission.dll",
+  "Description": "Advanced commission management system for marketplace. Supports category-based rates, product overrides, automatic calculation with snapshots, tax withholding (stopaj), and marketplace transaction fees.",
+  "LimitedToStores": [],
+  "LimitedToCustomerRoles": [],
+  "DependsOnSystemNames": ["Marketplace.VendorExtensions"]
+}

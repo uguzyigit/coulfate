@@ -1,0 +1,257 @@
+@model Nop.Plugin.Widgets.GoogleAnalytics4.Models.ConfigurationModel
+@using Nop.Web.Framework.Models
+@using Nop.Web.Framework.Mvc.ModelBinding
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = "Google Analytics 4 Enhanced";
+}
+
+<form asp-controller="GA4Admin" asp-action="Configure" method="post">
+    <div class="content-header clearfix">
+        <h1 class="float-left">
+            Google Analytics 4 Enhanced
+            <small>
+                <i class="fas fa-arrow-circle-left"></i>
+                <a asp-action="List" asp-controller="Widget">@T("Admin.Configuration.Widgets")</a>
+            </small>
+        </h1>
+        <div class="float-right">
+            <button type="submit" name="save" class="btn btn-primary">
+                <i class="far fa-save"></i>
+                @T("Admin.Common.Save")
+            </button>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="form-horizontal">
+                @await Component.InvokeAsync(typeof(StoreScopeConfigurationViewComponent))
+
+                <!-- Instructions -->
+                <div class="card card-default">
+                    <div class="card-body">
+                        @Html.Raw(T("Plugins.Widgets.GoogleAnalytics4.Instructions"))
+                    </div>
+                </div>
+
+                <!-- Basic Settings -->
+                <div class="card card-default">
+                    <div class="card-header">
+                        <i class="fas fa-cog"></i>
+                        @T("Plugins.Widgets.GoogleAnalytics4.BasicSettings")
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-override-store-checkbox asp-for="MeasurementId_OverrideForStore" asp-input="MeasurementId" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                <nop-label asp-for="MeasurementId" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="MeasurementId" asp-required="true" />
+                                <span asp-validation-for="MeasurementId"></span>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-override-store-checkbox asp-for="ApiSecret_OverrideForStore" asp-input="ApiSecret" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                <nop-label asp-for="ApiSecret" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="ApiSecret" html-attributes="@(new { type = "password" })" />
+                                <span asp-validation-for="ApiSecret"></span>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-override-store-checkbox asp-for="Enabled_OverrideForStore" asp-input="Enabled" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                <nop-label asp-for="Enabled" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="Enabled" />
+                                <span asp-validation-for="Enabled"></span>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-override-store-checkbox asp-for="EnableEcommerce_OverrideForStore" asp-input="EnableEcommerce" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                <nop-label asp-for="EnableEcommerce" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="EnableEcommerce" />
+                                <span asp-validation-for="EnableEcommerce"></span>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-override-store-checkbox asp-for="IncludeTax_OverrideForStore" asp-input="IncludeTax" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                <nop-label asp-for="IncludeTax" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="IncludeTax" />
+                                <span asp-validation-for="IncludeTax"></span>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-override-store-checkbox asp-for="IncludeCustomerId_OverrideForStore" asp-input="IncludeCustomerId" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                <nop-label asp-for="IncludeCustomerId" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="IncludeCustomerId" />
+                                <span asp-validation-for="IncludeCustomerId"></span>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-override-store-checkbox asp-for="EnableDebugMode_OverrideForStore" asp-input="EnableDebugMode" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                <nop-label asp-for="EnableDebugMode" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="EnableDebugMode" />
+                                <span asp-validation-for="EnableDebugMode"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Client-Side Events -->
+                <div class="card card-default">
+                    <div class="card-header">
+                        <i class="fab fa-js"></i>
+                        @T("Plugins.Widgets.GoogleAnalytics4.ClientSideEvents")
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <div class="col-md-6">
+                                        <nop-override-store-checkbox asp-for="TrackViewItemList_OverrideForStore" asp-input="TrackViewItemList" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                        <nop-label asp-for="TrackViewItemList" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <nop-editor asp-for="TrackViewItemList" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-6">
+                                        <nop-override-store-checkbox asp-for="TrackViewItem_OverrideForStore" asp-input="TrackViewItem" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                        <nop-label asp-for="TrackViewItem" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <nop-editor asp-for="TrackViewItem" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-6">
+                                        <nop-override-store-checkbox asp-for="TrackAddToCart_OverrideForStore" asp-input="TrackAddToCart" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                        <nop-label asp-for="TrackAddToCart" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <nop-editor asp-for="TrackAddToCart" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-6">
+                                        <nop-override-store-checkbox asp-for="TrackRemoveFromCart_OverrideForStore" asp-input="TrackRemoveFromCart" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                        <nop-label asp-for="TrackRemoveFromCart" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <nop-editor asp-for="TrackRemoveFromCart" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <div class="col-md-6">
+                                        <nop-override-store-checkbox asp-for="TrackViewCart_OverrideForStore" asp-input="TrackViewCart" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                        <nop-label asp-for="TrackViewCart" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <nop-editor asp-for="TrackViewCart" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-6">
+                                        <nop-override-store-checkbox asp-for="TrackBeginCheckout_OverrideForStore" asp-input="TrackBeginCheckout" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                        <nop-label asp-for="TrackBeginCheckout" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <nop-editor asp-for="TrackBeginCheckout" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-6">
+                                        <nop-override-store-checkbox asp-for="TrackAddShippingInfo_OverrideForStore" asp-input="TrackAddShippingInfo" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                        <nop-label asp-for="TrackAddShippingInfo" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <nop-editor asp-for="TrackAddShippingInfo" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-6">
+                                        <nop-override-store-checkbox asp-for="TrackAddPaymentInfo_OverrideForStore" asp-input="TrackAddPaymentInfo" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                        <nop-label asp-for="TrackAddPaymentInfo" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <nop-editor asp-for="TrackAddPaymentInfo" />
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <div class="col-md-6">
+                                        <nop-override-store-checkbox asp-for="TrackSearch_OverrideForStore" asp-input="TrackSearch" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                        <nop-label asp-for="TrackSearch" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <nop-editor asp-for="TrackSearch" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Server-Side Events -->
+                <div class="card card-default">
+                    <div class="card-header">
+                        <i class="fas fa-server"></i>
+                        @T("Plugins.Widgets.GoogleAnalytics4.ServerSideEvents")
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-info-circle"></i>
+                            Server-side eventler icin <b>API Secret</b> gereklidir. Bu eventler siparis odendikten sonra sunucu tarafindan gonderilir.
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <div class="col-md-6">
+                                        <nop-override-store-checkbox asp-for="TrackPurchase_OverrideForStore" asp-input="TrackPurchase" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                        <nop-label asp-for="TrackPurchase" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <nop-editor asp-for="TrackPurchase" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <div class="col-md-6">
+                                        <nop-override-store-checkbox asp-for="TrackRefund_OverrideForStore" asp-input="TrackRefund" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                                        <nop-label asp-for="TrackRefund" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <nop-editor asp-for="TrackRefund" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+</form>

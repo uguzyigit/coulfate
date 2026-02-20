@@ -1,0 +1,70 @@
+@using Nop.Plugin.Accounting.Parasut.Models.Vendor
+@model VendorInvoiceListModel
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        <i class="fas fa-file-invoice"></i> Faturalarım
+    </h1>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-default">
+            <div class="card-body">
+                @if (!Model.Invoices.Any())
+                {
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Henüz faturanız bulunmamaktadır.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Fatura No</th>
+                                    <th>Sipariş No</th>
+                                    <th>Tarih</th>
+                                    <th>Tür</th>
+                                    <th class="text-right">Tutar</th>
+                                    <th>Durum</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var invoice in Model.Invoices)
+                                {
+                                    <tr>
+                                        <td>@invoice.InvoiceNo</td>
+                                        <td>@invoice.OrderNumber</td>
+                                        <td>@invoice.CreatedOn</td>
+                                        <td>@invoice.InvoiceType</td>
+                                        <td class="text-right">@invoice.GrossAmount.ToString("N2") ₺</td>
+                                        <td><span class="badge @invoice.StatusClass">@invoice.Status</span></td>
+                                        <td>
+                                            <a href="@Url.Action("Details", "VendorInvoice", new { id = invoice.Id, area = "Admin" })" 
+                                               class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            @if (invoice.HasPdf)
+                                            {
+                                                <a href="@Url.Action("DownloadPdf", "VendorInvoice", new { id = invoice.Id, area = "Admin" })" 
+                                                   class="btn btn-sm btn-success" target="_blank">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>

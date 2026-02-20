@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using Marketplace.Abstractions.Domain;
 using Nop.Web.Framework.Models;
 using Nop.Web.Framework.Mvc.ModelBinding;
-using Nop.Plugin.Marketplace.Core.Domain;
 
 namespace Nop.Plugin.Marketplace.Core.Models;
 

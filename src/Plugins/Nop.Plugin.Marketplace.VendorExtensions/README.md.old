@@ -1,0 +1,170 @@
+# 🚀 Marketplace Vendor Extensions v2.0
+
+## Professional NopCommerce Vendor Integration
+
+Bu plugin, NopCommerce'in native Vendor sistemini genişleterek profesyonel bir marketplace çözümü sunar.
+
+---
+
+## ✨ Özellikler
+
+### ✅ Native Vendor Entegrasyonu
+- NopCommerce'in kendi `Vendor` entity'sini kullanır
+- Mevcut Admin → Vendors menüsüyle tam entegre
+- Diğer plugin'lerle %100 uyumlu
+
+### 💰 Vendor Balance Management
+- Otomatik balance tracking
+- Pending/Hold/Available balances
+- Detailed transaction history
+
+### 💸 Vendor Payout System
+- Payout request workflow
+- Multiple payment methods
+- Admin approval system
+- External transaction tracking
+
+### 📊 Commission Tracking
+- Automatic order commission calculation
+- Configurable commission rates per vendor
+- Detailed commission reports
+- Integration with order system
+
+---
+
+## 🏗️ Mimari
+
+```
+Native NopCommerce Vendor (Base)
+└── Extension Entities:
+    ├── VendorMarketplaceSettings (ek ayarlar)
+    ├── VendorBalance (bakiye yönetimi)
+    ├── VendorPayout (ödeme talepleri)
+    └── VendorOrderCommission (komisyon takibi)
+```
+
+---
+
+## 📦 Kurulum
+
+### Gereksinimler
+- NopCommerce 4.90+
+- .NET 9.0
+- SQL Server
+
+### Adımlar
+1. Plugin dosyalarını `src/Plugins/` klasörüne kopyalayın
+2. Solution'ı build edin
+3. Admin panelde plugin'i install edin
+4. Configure ayarlarını yapın
+
+---
+
+## 🎯 v1.x'den v2.0'a Farklar
+
+### v1.x (Eski - Tavsiye Edilmez)
+```
+❌ Kendi Vendor entity'si
+❌ Kendi Vendor tablosu
+❌ NopCommerce Vendor ile çakışma
+❌ Upgrade sorunları
+❌ Diğer plugin'lerle uyumsuzluk
+```
+
+### v2.0 (Yeni - Professional)
+```
+✅ Native Vendor kullanımı
+✅ Extension pattern
+✅ Zero conflict
+✅ Upgrade güvenli
+✅ Full ecosystem compatibility
+```
+
+---
+
+## 📚 Dokümantasyon
+
+- **[IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)** - Detaylı implementation rehberi
+- **[NATIVE-VENDOR-MIGRATION-PLAN.md](../NATIVE-VENDOR-MIGRATION-PLAN.md)** - Migration planı
+
+---
+
+## 🔧 Development Status
+
+### ✅ Tamamlanan
+- Entity design
+- Service interfaces
+- Database schema
+- Architecture documentation
+
+### ⏳ Devam Eden
+- Service implementation
+- Controllers
+- Views
+- Event consumers
+
+### 📋 Planlanmış
+- Unit tests
+- Integration tests
+- Sample data
+- User documentation
+
+---
+
+## 💡 Kullanım Örneği
+
+### Vendor Balance Sorgulama
+
+```csharp
+// Native vendor service ile vendor al
+var vendor = await _vendorService.GetVendorByIdAsync(vendorId);
+
+// Extension service ile balance al
+var balance = await _vendorMarketplaceService
+    .GetVendorBalanceAsync(vendor.Id);
+
+Console.WriteLine($"{vendor.Name} balance: {balance.CurrentBalance}");
+```
+
+### Payout Request
+
+```csharp
+// Payout talebi oluştur
+var payout = await _vendorMarketplaceService.RequestPayoutAsync(
+    vendorId: 123,
+    amount: 1000m,
+    paymentMethod: "Bank Transfer"
+);
+
+// Admin onayı
+await _vendorMarketplaceService.ApprovePayoutAsync(payout.Id);
+
+// İşlem tamamlandı
+await _vendorMarketplaceService.CompletePayoutAsync(
+    payout.Id, 
+    externalReference: "TXN-123456"
+);
+```
+
+---
+
+## 🎊 Avantajlar
+
+1. **Professional Solution**: NopCommerce best practices
+2. **Maintainable**: Clean code, SOLID principles
+3. **Scalable**: Extension pattern ile kolay büyüme
+4. **Compatible**: Tüm ecosystem ile uyumlu
+5. **Future-Proof**: Upgrade güvenli
+
+---
+
+## 📞 Destek
+
+Issues, questions, contributions welcome!
+
+---
+
+**Version:** 2.0.0  
+**License:** Commercial  
+**Author:** Your Company  
+**NopCommerce:** 4.90+

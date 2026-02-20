@@ -1,0 +1,138 @@
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Marketplace.Commission.CategoryCommissions").Text;
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        <i class="fas fa-percentage"></i>
+        @T("Plugins.Marketplace.Commission.CategoryCommissions")
+    </h1>
+</div>
+
+<div class="content">
+    <div class="card card-default">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-list"></i>
+                @T("Plugins.Marketplace.Commission.CategoryCommissions.List")
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                @T("Plugins.Marketplace.Commission.CategoryCommissions.Info")
+            </div>
+            
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>@T("Plugins.Marketplace.Commission.Fields.CategoryName")</th>
+                        <th width="200">@T("Plugins.Marketplace.Commission.Fields.Rate") (%)</th>
+                        <th width="150">@T("Admin.Common.Actions")</th>
+                    </tr>
+                </thead>
+                <tbody id="category-tbody">
+                    <tr>
+                        <td colspan="3" class="text-center">
+                            <i class="fas fa-spinner fa-spin"></i> @T("Admin.Common.Loading")
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function() {
+        var translations = {
+            save: '@T("Admin.Common.Save").Text',
+            loading: '@T("Admin.Common.Loading").Text',
+            error: '@T("Admin.Common.Error").Text',
+            noCategories: '@T("Plugins.Marketplace.Commission.CategoryCommissions.NoCategories").Text'
+        };
+
+        function getAntiForgeryToken() {
+            return $('input[name="__RequestVerificationToken"]').val();
+        }
+
+        function loadCategories() {
+            $.ajax({
+                url: '@Url.Action("CategoryCommissionList", "Commission", new { area = "Admin" })',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    __RequestVerificationToken: getAntiForgeryToken()
+                },
+                success: function(result) {
+                    var tbody = $('#category-tbody');
+                    tbody.empty();
+                    
+                    if (result.data && result.data.length > 0) {
+                        $.each(result.data, function(index, item) {
+                            var row = '<tr>' +
+                                '<td>' + item.categoryName + '</td>' +
+                                '<td><input type="number" class="form-control rate-input" id="rate-' + item.categoryId + '" value="' + item.rate.toFixed(2) + '" min="0" max="100" step="1" /></td>' +
+                                '<td><button class="btn btn-primary btn-sm save-btn" data-categoryid="' + item.categoryId + '"><i class="fas fa-save"></i> ' + translations.save + '</button></td>' +
+                                '</tr>';
+                            tbody.append(row);
+                        });
+                    } else {
+                        tbody.html('<tr><td colspan="3" class="text-center">' + translations.noCategories + '</td></tr>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    var tbody = $('#category-tbody');
+                    tbody.html('<tr><td colspan="3" class="text-center text-danger"><i class="fas fa-exclamation-triangle"></i> ' + translations.error + ': ' + error + '</td></tr>');
+                    console.error('Error loading categories:', error);
+                    console.error('Response:', xhr.responseText);
+                }
+            });
+        }
+
+        $(document).on('click', '.save-btn', function() {
+            var button = $(this);
+            var categoryId = button.data('categoryid');
+            var rate = parseFloat($('#rate-' + categoryId).val());
+
+            if (isNaN(rate) || rate < 0 || rate > 100) {
+                alert('Please enter a valid rate between 0 and 100');
+                return;
+            }
+
+            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> ' + translations.loading);
+
+            $.ajax({
+                url: '@Url.Action("SetCategoryCommission", "Commission", new { area = "Admin" })',
+                type: 'POST',
+                data: { 
+                    categoryId: categoryId, 
+                    rate: rate,
+                    __RequestVerificationToken: getAntiForgeryToken()
+                },
+                success: function(result) {
+                    button.prop('disabled', false).html('<i class="fas fa-save"></i> ' + translations.save);
+                    
+                    if (result.success) {
+                        button.closest('tr').addClass('table-success');
+                        setTimeout(function() {
+                            button.closest('tr').removeClass('table-success');
+                        }, 2000);
+                    } else {
+                        alert(translations.error + ': ' + (result.error || 'Unknown error'));
+                    }
+                },
+                error: function(xhr, status, error) {
+                    button.prop('disabled', false).html('<i class="fas fa-save"></i> ' + translations.save);
+                    alert(translations.error + ': ' + error);
+                    console.error('Error saving commission:', error);
+                    console.error('Response:', xhr.responseText);
+                }
+            });
+        });
+
+        // Load categories on page load
+        loadCategories();
+    });
+</script>

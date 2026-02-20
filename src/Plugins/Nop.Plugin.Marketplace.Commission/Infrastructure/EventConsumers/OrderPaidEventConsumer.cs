@@ -1,0 +1,227 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Nop.Core.Domain.Orders;
+using Nop.Core;
+using Nop.Core.Events;
+using Nop.Data;
+using Nop.Plugin.Marketplace.Commission.Domain;
+using Nop.Plugin.Marketplace.Commission.Services;
+using Nop.Services.Catalog;
+using Nop.Services.Configuration;
+using Nop.Services.Events;
+using Nop.Services.Logging;
+using Nop.Services.Orders;
+using Nop.Plugin.Marketplace.Commission.Events;
+
+namespace Nop.Plugin.Marketplace.Commission.Infrastructure.EventConsumers;
+
+/// <summary>
+/// Event consumer for order paid events
+/// Automatically creates commission records when an order is paid
+/// </summary>
+public class OrderPaidEventConsumer : IConsumer<EntityUpdatedEvent<Order>>
+{
+    private readonly ICommissionService _commissionService;
+    private readonly IProductService _productService;
+    private readonly IRepository<OrderCommission> _orderCommissionRepository;
+    private readonly ILogger _logger;
+    private readonly ISettingService _settingService;
+    private readonly IOrderService _orderService;
+    private readonly ICategoryService _categoryService;
+    private readonly IEventPublisher _eventPublisher;
+    
+    // Track processed orders to prevent infinite loop
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, bool> _processingOrders 
+        = new System.Collections.Concurrent.ConcurrentDictionary<int, bool>();
+
+    public OrderPaidEventConsumer(
+        ICommissionService commissionService,
+        IProductService productService,
+        IRepository<OrderCommission> orderCommissionRepository,
+        ILogger logger,
+        ISettingService settingService,
+        IOrderService orderService,
+        ICategoryService categoryService,
+        IEventPublisher eventPublisher)
+    {
+        _commissionService = commissionService;
+        _productService = productService;
+        _orderCommissionRepository = orderCommissionRepository;
+        _logger = logger;
+        _settingService = settingService;
+        _orderService = orderService;
+        _categoryService = categoryService;
+        _eventPublisher = eventPublisher;
+    }
+
+    public async Task HandleEventAsync(EntityUpdatedEvent<Order> eventMessage)
+    {
+        try
+        {
+            var order = eventMessage.Entity;
+            
+            // Only process if payment status is Paid (30)
+            if (order.PaymentStatusId != 30)
+                return;
+            
+            // Check if already processing this order (prevent infinite loop)
+            if (!_processingOrders.TryAdd(order.Id, true))
+            {
+                // Already processing, skip
+                return;
+            }
+            
+            try
+            {
+                Console.WriteLine("==========================================");
+                Console.WriteLine($"[COMMISSION] Processing Order #{order.Id}");
+                Console.WriteLine("==========================================");
+                
+                // Load settings
+                var commissionSettings = await _settingService.LoadSettingAsync<CommissionSettings>();
+                
+                // Log the event
+                await _logger.InformationAsync($"[COMMISSION] Order #{order.Id} marked as paid, processing commission");
+
+                // Process each order item
+                var orderItems = await _orderService.GetOrderItemsAsync(order.Id);
+                
+                Console.WriteLine($"[COMMISSION] Found {orderItems.Count} order items");
+                
+                foreach (var orderItem in orderItems)
+                {
+                    Console.WriteLine($"[COMMISSION] Processing OrderItem #{orderItem.Id}");
+                    
+                    // Check if commission already exists for THIS specific item
+                    var existingCommissions = await _orderCommissionRepository.GetAllAsync(
+                        query => query.Where(c => c.OrderId == order.Id && c.OrderItemId == orderItem.Id));
+                    var existingCommission = existingCommissions.FirstOrDefault();
+
+                    if (existingCommission != null)
+                    {
+                        Console.WriteLine($"[COMMISSION] Commission already exists for OrderItem #{orderItem.Id}, skipping");
+                        await _logger.InformationAsync($"[COMMISSION] Commission already exists for Order #{order.Id}, OrderItem #{orderItem.Id}");
+                        continue;
+                    }
+
+                    // Get product details
+                    var product = await _productService.GetProductByIdAsync(orderItem.ProductId);
+                    if (product == null)
+                    {
+                        Console.WriteLine($"[COMMISSION] Product #{orderItem.ProductId} not found");
+                        await _logger.WarningAsync($"[COMMISSION] Product #{orderItem.ProductId} not found for OrderItem #{orderItem.Id}");
+                        continue;
+                    }
+
+                    Console.WriteLine($"[COMMISSION] Product #{product.Id} found, Vendor: {product.VendorId}");
+
+                    // Get vendor ID
+                    var vendorId = product.VendorId;
+                    if (vendorId == 0)
+                    {
+                        Console.WriteLine($"[COMMISSION] No vendor, skipping");
+                        await _logger.InformationAsync($"[COMMISSION] Product #{product.Id} has no vendor, skipping commission");
+                        continue;
+                    }
+
+                    // Get category ID (first category)
+                    var categoryId = 0;
+                    var productCategories = await _categoryService.GetProductCategoriesByProductIdAsync(product.Id);
+                    if (productCategories.Any())
+                    {
+                        categoryId = productCategories.First().CategoryId;
+                    }
+
+                    Console.WriteLine($"[COMMISSION] Category ID: {categoryId}");
+
+                    // Get commission rate for this product
+                    var commissionRate = await _commissionService.GetProductCommissionRateAsync(product.Id);
+                    
+                    if (categoryId > 0 && commissionRate == 0)
+                    {
+                        commissionRate = await _commissionService.GetCategoryCommissionRateAsync(categoryId);
+                    }
+
+                    if (commissionRate == 0)
+                    {
+                        commissionRate = commissionSettings.DefaultCommissionRate;
+                    }
+
+                    Console.WriteLine($"[COMMISSION] Commission Rate: {commissionRate}%");
+
+                    // Calculate amounts
+                    var productPrice = orderItem.UnitPriceExclTax;
+                    var quantity = orderItem.Quantity;
+                    var discountAmount = orderItem.DiscountAmountExclTax;
+                    var netPrice = (productPrice * quantity) - discountAmount;
+                    
+                    var commissionAmount = netPrice * (commissionRate / 100);
+                    var marketplaceFee = commissionSettings.FixedFeePerOrder;
+                    var taxWithholding = netPrice * (commissionSettings.TaxWithholdingRate / 100);
+                    var vendorNetAmount = netPrice - commissionAmount - marketplaceFee - taxWithholding;
+
+                    Console.WriteLine($"[COMMISSION] Net Price: {netPrice}, Commission: {commissionAmount}, Fee: {marketplaceFee}, Tax: {taxWithholding}");
+
+                    // Create commission record
+                    var orderCommission = new OrderCommission
+                    {
+                        OrderId = order.Id,
+                        OrderItemId = orderItem.Id,
+                        VendorId = vendorId,
+                        ProductId = product.Id,
+                        CategoryId = categoryId,
+                        Quantity = quantity,
+                        ProductPrice = productPrice,
+                        DiscountAmount = discountAmount,
+                        DiscountSource = null,
+                        ShippingCost = 0,
+                        NetPrice = netPrice,
+                        CommissionRate = commissionRate,
+                        CommissionAmount = commissionAmount,
+                        MarketplaceFee = marketplaceFee,
+                        TaxWithholding = taxWithholding,
+                        VendorNetAmount = vendorNetAmount,
+                        IsInvoiced = false,
+                        InvoiceId = null,
+                        IsPaymentApproved = false,
+                        IsPaid = false,
+                        PaidOnUtc = null,
+                        CreatedOnUtc = DateTime.UtcNow
+                    };
+
+                    Console.WriteLine($"[COMMISSION] Inserting commission record...");
+                    await _orderCommissionRepository.InsertAsync(orderCommission);
+
+                    // Manually publish EntityInsertedEvent
+                    await _eventPublisher.PublishAsync(new EntityInsertedEvent<BaseEntity>(orderCommission));
+                    Console.WriteLine($"[COMMISSION] Commission record inserted successfully!");
+
+                    // Publish event for VendorExtensions to create transactions
+
+                    await _logger.InformationAsync(
+                        $"[COMMISSION] Commission created for Order #{order.Id}, Product #{product.Id}, " +
+                        $"Vendor #{vendorId}, Amount: {commissionAmount:F2} TL");
+                }
+                
+                Console.WriteLine("==========================================");
+                Console.WriteLine($"[COMMISSION] Order #{order.Id} processing completed");
+                Console.WriteLine("==========================================");
+            }
+            finally
+            {
+                // Remove from processing set
+                _processingOrders.TryRemove(order.Id, out _);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("==========================================");
+            Console.WriteLine($"[COMMISSION ERROR] {ex.Message}");
+            Console.WriteLine($"[COMMISSION ERROR] Stack: {ex.StackTrace}");
+            Console.WriteLine("==========================================");
+            
+            await _logger.ErrorAsync($"[COMMISSION] Error processing order commission for Order #{eventMessage.Entity.Id}", ex);
+        }
+    }
+}

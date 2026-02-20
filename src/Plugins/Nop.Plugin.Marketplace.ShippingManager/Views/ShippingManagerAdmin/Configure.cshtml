@@ -1,0 +1,63 @@
+@model Nop.Plugin.Marketplace.ShippingManager.Models.Admin.ConfigurationModel
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = "Marketplace Kargo Ayarları";
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        <i class="fas fa-truck"></i> Marketplace Kargo Ayarları
+    </h1>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+
+        <!-- Info Box -->
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            <strong>Not:</strong> Ücretsiz kargo ayarları için <a href="@Url.Action("Shipping", "Setting", new { area = "Admin" })">Yapılandırma → Ayarlar → Kargo</a> sayfasını kullanın.
+            Kargo sağlayıcılarını etkinleştirmek için <a href="@Url.Action("Providers", "Shipping", new { area = "Admin" })">Yapılandırma → Kargo → Sağlayıcılar</a> sayfasını kullanın.
+        </div>
+
+        <form asp-controller="ShippingManagerAdmin" asp-action="Configure" method="post">
+            <div class="card card-default">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-sliders-h"></i> Checkout Ayarları
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="form-group row">
+                        <label asp-for="ShippingMethodName" class="col-md-3 col-form-label"></label>
+                        <div class="col-md-9">
+                            <input asp-for="ShippingMethodName" class="form-control" />
+                            <span class="text-muted">Checkout'ta müşteriye gösterilecek kargo yöntemi adı</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label asp-for="ShippingMethodDescription" class="col-md-3 col-form-label"></label>
+                        <div class="col-md-9">
+                            <input asp-for="ShippingMethodDescription" class="form-control" />
+                            <span class="text-muted">Checkout'ta müşteriye gösterilecek açıklama</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label asp-for="DefaultShippingRate" class="col-md-3 col-form-label"></label>
+                        <div class="col-md-9">
+                            <input asp-for="DefaultShippingRate" class="form-control" type="number" step="0.01" min="0" />
+                            <span class="text-muted">Varsayılan kargo ücreti (ücretsiz kargo koşulları sağlanmadığında)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Kaydet
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>

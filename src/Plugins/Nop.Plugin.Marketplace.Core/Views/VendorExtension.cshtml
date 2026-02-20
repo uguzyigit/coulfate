@@ -1,0 +1,181 @@
+@model VendorExtensionModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = "Marketplace Bilgileri - " + Model.VendorName;
+}
+
+<form asp-controller="MarketplaceCoreAdmin" asp-action="VendorExtension" method="post">
+    <input asp-for="Id" type="hidden" />
+    <input asp-for="VendorId" type="hidden" />
+
+    <div class="content-header clearfix">
+        <h1 class="float-left">
+            Marketplace Bilgileri - @Model.VendorName
+        </h1>
+        <div class="float-right">
+            <button type="submit" name="save" class="btn btn-primary">
+                <i class="far fa-save"></i>
+                @T("Admin.Common.Save")
+            </button>
+            <a asp-controller="Vendor" asp-action="Edit" asp-route-id="@Model.VendorId" class="btn btn-default">
+                <i class="fas fa-arrow-left"></i>
+                Satici Sayfasina Don
+            </a>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="form-horizontal">
+                <div class="card card-default">
+                    <div class="card-header">
+                        <i class="fas fa-info-circle"></i>
+                        Temel Bilgiler
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-label asp-for="VendorName" />
+                            </div>
+                            <div class="col-md-9">
+                                <input asp-for="VendorName" class="form-control" readonly />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-label asp-for="Code" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="Code" />
+                                <span asp-validation-for="Code"></span>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-label asp-for="MarketplaceStatus" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-select asp-for="MarketplaceStatus" asp-items="Html.GetEnumSelectList<MarketplaceVendorStatus>()" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-label asp-for="Phone" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="Phone" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-default">
+                    <div class="card-header">
+                        <i class="fas fa-file-invoice"></i>
+                        Vergi ve Ticaret Bilgileri
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-label asp-for="TaxNumber" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="TaxNumber" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-label asp-for="TradeRegistryNumber" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="TradeRegistryNumber" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-default">
+                    <div class="card-header">
+                        <i class="fas fa-university"></i>
+                        Banka Bilgileri
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-label asp-for="BankAccountName" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="BankAccountName" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-label asp-for="BankIban" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="BankIban" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-default">
+                    <div class="card-header">
+                        <i class="fas fa-cog"></i>
+                        Ayarlar
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-label asp-for="MinimumPayoutAmount" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="MinimumPayoutAmount" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <nop-label asp-for="RequiresProductApproval" />
+                            </div>
+                            <div class="col-md-9">
+                                <nop-editor asp-for="RequiresProductApproval" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (Model.Id > 0)
+                {
+                    <div class="card card-default">
+                        <div class="card-header">
+                            <i class="fas fa-clock"></i>
+                            Tarihler
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    Olusturulma Tarihi
+                                </div>
+                                <div class="col-md-9">
+                                    @Model.CreatedOnUtc.ToString("dd.MM.yyyy HH:mm")
+                                </div>
+                            </div>
+                            @if (Model.UpdatedOnUtc.HasValue)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-md-3">
+                                        Guncellenme Tarihi
+                                    </div>
+                                    <div class="col-md-9">
+                                        @Model.UpdatedOnUtc.Value.ToString("dd.MM.yyyy HH:mm")
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+</form>

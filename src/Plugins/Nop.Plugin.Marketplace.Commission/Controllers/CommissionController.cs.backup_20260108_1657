@@ -1,0 +1,426 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Nop.Core;
+using Nop.Core.Domain.Orders;
+using Nop.Plugin.Marketplace.Commission.Models;
+using Nop.Services.Catalog;
+using Nop.Services.Configuration;
+using Nop.Services.Localization;
+using Nop.Services.Messages;
+using Nop.Services.Orders;
+using Nop.Services.Security;
+using Nop.Services.Vendors;
+using Nop.Web.Framework;
+using Nop.Web.Framework.Controllers;
+using Nop.Web.Framework.Mvc.Filters;
+using Nop.Web.Framework.UI;
+using Nop.Data;
+
+namespace Nop.Plugin.Marketplace.Commission.Controllers;
+
+[Area(AreaNames.ADMIN)]
+[AuthorizeAdmin]
+[AutoValidateAntiforgeryToken]
+public class CommissionController : BasePluginController
+{
+    private readonly ISettingService _settingService;
+    private readonly ILocalizationService _localizationService;
+    private readonly INotificationService _notificationService;
+    private readonly IPermissionService _permissionService;
+    private readonly ICategoryService _categoryService;
+    private readonly IProductService _productService;
+    private readonly IVendorService _vendorService;
+    private readonly IOrderService _orderService;
+    private readonly INopDataProvider _dataProvider;
+    private readonly INopHtmlHelper _nopHtmlHelper;
+    private readonly IWorkContext _workContext;
+
+    public CommissionController(
+        ISettingService settingService,
+        ILocalizationService localizationService,
+        INotificationService notificationService,
+        IPermissionService permissionService,
+        ICategoryService categoryService,
+        IProductService productService,
+        IVendorService vendorService,
+        IOrderService orderService,
+        INopDataProvider dataProvider,
+        INopHtmlHelper nopHtmlHelper,
+        IWorkContext workContext)
+    {
+        _settingService = settingService;
+        _localizationService = localizationService;
+        _notificationService = notificationService;
+        _permissionService = permissionService;
+        _categoryService = categoryService;
+        _productService = productService;
+        _vendorService = vendorService;
+        _orderService = orderService;
+        _dataProvider = dataProvider;
+        _nopHtmlHelper = nopHtmlHelper;
+        _workContext = workContext;
+    }
+
+    #region Vendor Access Control Helpers
+
+    /// <summary>
+    /// Check if current user is a vendor
+    /// </summary>
+    private async Task<bool> IsVendorAsync()
+    {
+        var vendor = await _workContext.GetCurrentVendorAsync();
+        return vendor != null;
+    }
+
+    /// <summary>
+    /// Checks vendor access and returns AccessDenied view if user is a vendor
+    /// </summary>
+    private async Task<IActionResult> CheckVendorAccessAsync()
+    {
+        if (await IsVendorAsync())
+            return AccessDeniedView();
+        return null;
+    }
+
+    #endregion
+
+    #region Configure
+
+    public async Task<IActionResult> Configure()
+    {
+        // Vendor access check
+        var vendorCheck = await CheckVendorAccessAsync();
+        if (vendorCheck != null) return vendorCheck;
+
+        _nopHtmlHelper.SetActiveMenuItemSystemName("Marketplace.Commission.Settings");
+
+        var settings = await _settingService.LoadSettingAsync<CommissionSettings>();
+        var model = new ConfigurationModel
+        {
+            DefaultCommissionRate = settings.DefaultCommissionRate,
+            MarketplaceFee = settings.MarketplaceFee,
+            TaxWithholdingRate = settings.TaxWithholdingRate,
+            AutoProcessOnPayment = settings.AutoProcessOnPayment
+        };
+
+        return View("~/Plugins/Marketplace.Commission/Views/Configure.cshtml", model);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Configure(ConfigurationModel model)
+    {
+        // Vendor access check
+        var vendorCheck = await CheckVendorAccessAsync();
+        if (vendorCheck != null) return vendorCheck;
+
+        if (!ModelState.IsValid)
+            return await Configure();
+
+        var settings = await _settingService.LoadSettingAsync<CommissionSettings>();
+        settings.DefaultCommissionRate = model.DefaultCommissionRate;
+        settings.MarketplaceFee = model.MarketplaceFee;
+        settings.TaxWithholdingRate = model.TaxWithholdingRate;
+        settings.AutoProcessOnPayment = model.AutoProcessOnPayment;
+
+        await _settingService.SaveSettingAsync(settings);
+
+        _notificationService.SuccessNotification(
+            await _localizationService.GetResourceAsync("Admin.Plugins.Saved"));
+
+        return await Configure();
+    }
+
+    #endregion
+
+    #region Category Commissions
+
+    public async Task<IActionResult> CategoryCommissions()
+    {
+        // Vendor access check
+        var vendorCheck = await CheckVendorAccessAsync();
+        if (vendorCheck != null) return vendorCheck;
+
+        _nopHtmlHelper.SetActiveMenuItemSystemName("Marketplace.Commission.CategoryRates");
+        return View("~/Plugins/Marketplace.Commission/Views/CategoryCommissions.cshtml");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CategoryCommissionList()
+    {
+        // Vendor access check
+        var vendorCheck = await CheckVendorAccessAsync();
+        if (vendorCheck != null) return vendorCheck;
+
+        try
+        {
+            var sql = "SELECT CategoryId, Rate FROM `MarketplaceCategoryCommission` WHERE IsActive = 1";
+            var commissionData = await _dataProvider.QueryAsync<(int CategoryId, decimal Rate)>(sql);
+
+            var commissionDict = commissionData.ToDictionary(x => x.CategoryId, x => x.Rate);
+            var allCategories = await _categoryService.GetAllCategoriesAsync(showHidden: true);
+            var settings = await _settingService.LoadSettingAsync<CommissionSettings>();
+
+            var result = allCategories.Select(c => new CategoryCommissionModel
+            {
+                CategoryId = c.Id,
+                CategoryName = c.Name,
+                CommissionRate = commissionDict.ContainsKey(c.Id) ? commissionDict[c.Id] : settings.DefaultCommissionRate,
+                IsCustomRate = commissionDict.ContainsKey(c.Id)
+            }).ToList();
+
+            return Json(new { data = result });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SetCategoryCommission(int categoryId, decimal rate)
+    {
+        // Vendor access check
+        var vendorCheck = await CheckVendorAccessAsync();
+        if (vendorCheck != null) return vendorCheck;
+
+        try
+        {
+            var checkSql = "SELECT COUNT(*) FROM `MarketplaceCategoryCommission` WHERE CategoryId = @CategoryId";
+            var exists = await _dataProvider.ExecuteScalarAsync<int>(checkSql, new { CategoryId = categoryId });
+
+            if (exists > 0)
+            {
+                var updateSql = @"
+                    UPDATE `MarketplaceCategoryCommission` 
+                    SET Rate = @Rate, UpdatedOnUtc = @UpdatedOnUtc 
+                    WHERE CategoryId = @CategoryId";
+                await _dataProvider.ExecuteNonQueryAsync(updateSql, new
+                {
+                    CategoryId = categoryId,
+                    Rate = rate,
+                    UpdatedOnUtc = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                var insertSql = @"
+                    INSERT INTO `MarketplaceCategoryCommission` 
+                    (CategoryId, Rate, IsActive, CreatedOnUtc) 
+                    VALUES (@CategoryId, @Rate, 1, @CreatedOnUtc)";
+                await _dataProvider.ExecuteNonQueryAsync(insertSql, new
+                {
+                    CategoryId = categoryId,
+                    Rate = rate,
+                    CreatedOnUtc = DateTime.UtcNow
+                });
+            }
+
+            return Json(new { success = true, message = "Commission rate updated successfully" });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, error = ex.Message });
+        }
+    }
+
+    #endregion
+
+    #region Product Commissions
+
+    public async Task<IActionResult> ProductCommissions()
+    {
+        // Vendor access check
+        var vendorCheck = await CheckVendorAccessAsync();
+        if (vendorCheck != null) return vendorCheck;
+
+        _nopHtmlHelper.SetActiveMenuItemSystemName("Marketplace.Commission.ProductRates");
+        return View("~/Plugins/Marketplace.Commission/Views/ProductCommissions.cshtml");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ProductCommissionList()
+    {
+        // Vendor access check
+        var vendorCheck = await CheckVendorAccessAsync();
+        if (vendorCheck != null) return vendorCheck;
+
+        try
+        {
+            var sql = @"
+                SELECT 
+                    pc.Id, pc.ProductId, pc.Rate, pc.Reason, pc.CreatedOnUtc, pc.ExpiresOnUtc,
+                    p.Name as ProductName
+                FROM `MarketplaceProductCommission` pc
+                INNER JOIN `Product` p ON pc.ProductId = p.Id
+                WHERE pc.IsActive = 1
+                ORDER BY pc.CreatedOnUtc DESC
+                LIMIT 100";
+
+            var commissions = await _dataProvider.QueryAsync<ProductCommissionModel>(sql);
+
+            return Json(new { data = commissions });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SetProductCommission(int productId, decimal rate, string reason, DateTime? expiresOnUtc)
+    {
+        // Vendor access check
+        var vendorCheck = await CheckVendorAccessAsync();
+        if (vendorCheck != null) return vendorCheck;
+
+        try
+        {
+            var checkSql = "SELECT COUNT(*) FROM `MarketplaceProductCommission` WHERE ProductId = @ProductId";
+            var exists = await _dataProvider.ExecuteScalarAsync<int>(checkSql, new { ProductId = productId });
+
+            if (exists > 0)
+            {
+                var updateSql = @"
+                    UPDATE `MarketplaceProductCommission` 
+                    SET Rate = @Rate, Reason = @Reason, ExpiresOnUtc = @ExpiresOnUtc 
+                    WHERE ProductId = @ProductId";
+                await _dataProvider.ExecuteNonQueryAsync(updateSql, new
+                {
+                    ProductId = productId,
+                    Rate = rate,
+                    Reason = reason,
+                    ExpiresOnUtc = expiresOnUtc
+                });
+            }
+            else
+            {
+                var insertSql = @"
+                    INSERT INTO `MarketplaceProductCommission` 
+                    (ProductId, Rate, IsActive, Reason, CreatedOnUtc, ExpiresOnUtc) 
+                    VALUES (@ProductId, @Rate, 1, @Reason, @CreatedOnUtc, @ExpiresOnUtc)";
+                await _dataProvider.ExecuteNonQueryAsync(insertSql, new
+                {
+                    ProductId = productId,
+                    Rate = rate,
+                    Reason = reason,
+                    CreatedOnUtc = DateTime.UtcNow,
+                    ExpiresOnUtc = expiresOnUtc
+                });
+            }
+
+            return Json(new { success = true, message = "Product commission updated successfully" });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, error = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> DeleteProductCommission(int id)
+    {
+        // Vendor access check
+        var vendorCheck = await CheckVendorAccessAsync();
+        if (vendorCheck != null) return vendorCheck;
+
+        try
+        {
+            var deleteSql = "DELETE FROM `MarketplaceProductCommission` WHERE Id = @Id";
+            await _dataProvider.ExecuteNonQueryAsync(deleteSql, new { Id = id });
+
+            return Json(new { success = true, message = "Product commission deleted successfully" });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, error = ex.Message });
+        }
+    }
+
+    #endregion
+
+    #region Reports
+
+    public async Task<IActionResult> Reports()
+    {
+        // Vendor access check
+        var vendorCheck = await CheckVendorAccessAsync();
+        if (vendorCheck != null) return vendorCheck;
+
+        _nopHtmlHelper.SetActiveMenuItemSystemName("Marketplace.Commission.AllReports");
+        return View("~/Plugins/Marketplace.Commission/Views/Reports.cshtml");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> GetReportData(DateTime? startDate, DateTime? endDate)
+    {
+        // Vendor access check
+        var vendorCheck = await CheckVendorAccessAsync();
+        if (vendorCheck != null) return vendorCheck;
+
+        try
+        {
+            startDate ??= DateTime.UtcNow.AddMonths(-1);
+            endDate ??= DateTime.UtcNow;
+
+            // Summary query - FIXED: ISNULL → IFNULL for MySQL
+            var summarySql = @"
+                SELECT 
+                    COUNT(DISTINCT OrderId) as TotalOrders,
+                    IFNULL(SUM(NetPrice), 0) as TotalRevenue,
+                    IFNULL(SUM(CommissionAmount), 0) as TotalCommission,
+                    IFNULL(SUM(MarketplaceFee), 0) as TotalFee,
+                    IFNULL(SUM(TaxWithholding), 0) as TotalTax,
+                    IFNULL(SUM(VendorNetAmount), 0) as TotalVendorNet
+                FROM `MarketplaceOrderCommission`
+                WHERE CreatedOnUtc >= @StartDate AND CreatedOnUtc <= @EndDate";
+
+            var summary = (await _dataProvider.QueryAsync<ReportSummary>(summarySql, new
+            {
+                StartDate = startDate,
+                EndDate = endDate
+            })).FirstOrDefault() ?? new ReportSummary();
+
+            // Details query - FIXED: TOP 100 → LIMIT 100 for MySQL
+            var detailsSql = @"
+                SELECT 
+                    oc.OrderId,
+                    oc.VendorId,
+                    v.Name as VendorName,
+                    p.Name as ProductName,
+                    oc.NetPrice,
+                    oc.CommissionRate,
+                    oc.CommissionAmount,
+                    oc.MarketplaceFee,
+                    oc.TaxWithholding,
+                    oc.VendorNetAmount,
+                    oc.CreatedOnUtc
+                FROM `MarketplaceOrderCommission` oc
+                INNER JOIN `Vendor` v ON oc.VendorId = v.Id
+                INNER JOIN `Product` p ON oc.ProductId = p.Id
+                WHERE oc.CreatedOnUtc >= @StartDate AND oc.CreatedOnUtc <= @EndDate
+                ORDER BY oc.CreatedOnUtc DESC
+                LIMIT 100";
+
+            var details = await _dataProvider.QueryAsync<CommissionDetailModel>(detailsSql, new
+            {
+                StartDate = startDate,
+                EndDate = endDate
+            });
+
+            return Json(new
+            {
+                summary = summary,
+                details = details
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { error = ex.Message });
+        }
+    }
+
+    #endregion
+}

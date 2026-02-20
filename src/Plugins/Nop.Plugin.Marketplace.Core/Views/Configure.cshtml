@@ -9,15 +9,9 @@
     <h1 class="float-left">
         @T("Plugins.Marketplace.Core.Configure")
     </h1>
-    <div class="float-right">
-        <a asp-controller="MarketplaceVendor" asp-action="Index" asp-area="Admin" class="btn btn-primary">
-            <i class="fas fa-users"></i>
-            @T("Plugins.Marketplace.Core.Menu.Vendors")
-        </a>
-    </div>
 </div>
 
-<form asp-controller="MarketplaceVendor" asp-action="Configure" asp-area="Admin" method="post">
+<form asp-controller="MarketplaceCoreAdmin" asp-action="Configure" method="post">
     <div class="cards-group">
         <div class="card card-default">
             <div class="card-header">
@@ -67,8 +61,7 @@
 
 <div class="alert alert-info mt-3">
     <i class="fas fa-info-circle"></i>
-    <strong>Hızlı Erişim:</strong> 
-    Satıcı yönetimi için yukarıdaki "Satıcılar" butonuna tıklayın veya 
-    doğrudan şu URL'yi kullanın: 
-    <code>/Admin/Marketplace/Vendor/List</code>
+    <strong>Bilgi:</strong>
+    Satici yonetimi icin NopCommerce'in yerlesik satici sayfasini kullanin:
+    <a href="/Admin/Vendor/List" class="alert-link">Saticilar</a>
 </div>

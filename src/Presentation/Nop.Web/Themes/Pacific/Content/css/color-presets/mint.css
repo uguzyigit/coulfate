@@ -1,0 +1,11 @@
+/* ========================================
+   PACIFIC THEME - Mint Color Preset
+   #2ecc71
+   ======================================== */
+
+:root {
+  --pacific-primary: #2ecc71;
+  --pacific-primary-hover: #27ae60;
+  --pacific-primary-light: #58d68d;
+  --pacific-primary-rgb: 46, 204, 113;
+}

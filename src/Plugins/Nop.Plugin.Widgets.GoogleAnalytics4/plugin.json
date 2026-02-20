@@ -1,0 +1,14 @@
+{
+  "Group": "Widgets",
+  "FriendlyName": "Google Analytics 4 Enhanced",
+  "SystemName": "Widgets.GoogleAnalytics4",
+  "Version": "1.0.0",
+  "SupportedVersions": [ "4.90" ],
+  "Author": "Coulfate",
+  "DisplayOrder": 1,
+  "FileName": "Nop.Plugin.Widgets.GoogleAnalytics4.dll",
+  "Description": "Google Analytics 4 Enhanced E-commerce tracking. Full GA4 event support including view_item, add_to_cart, begin_checkout, purchase and more. Both client-side and server-side tracking.",
+  "LimitedToStores": [],
+  "LimitedToCustomerRoles": [],
+  "DependsOnSystemNames": []
+}

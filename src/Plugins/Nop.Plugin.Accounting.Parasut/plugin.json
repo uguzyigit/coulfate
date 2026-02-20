@@ -1,0 +1,14 @@
+{
+  "Group": "Accounting",
+  "FriendlyName": "Paraşüt Muhasebe Entegrasyonu",
+  "SystemName": "Accounting.Parasut",
+  "Version": "1.0.0",
+  "SupportedVersions": [ "4.90" ],
+  "Author": "Coulfate",
+  "DisplayOrder": 1,
+  "FileName": "Nop.Plugin.Accounting.Parasut.dll",
+  "Description": "Satıcı komisyon, kargo ve ceza faturalarını Paraşüt'e otomatik gönderir ve PDF'leri saklar. Vendor integration for Paraşüt accounting system with automatic invoice generation and PDF management.",
+  "LimitedToStores": [],
+  "LimitedToCustomerRoles": [],
+  "DependsOnSystemNames": []
+}

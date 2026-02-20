@@ -1,9 +1,9 @@
+using Marketplace.Abstractions.Domain;
+using Marketplace.Abstractions.Services;
 using Nop.Core;
 using Nop.Core.Caching;
 using Nop.Core.Domain.Vendors;
 using Nop.Data;
-using Nop.Plugin.Marketplace.Core.Domain;
-using Nop.Plugin.Marketplace.Core.Services;
 using Nop.Plugin.Marketplace.VendorApplication.Domain;
 using Nop.Services.Media;
 using NopVendorService = Nop.Services.Vendors.IVendorService;

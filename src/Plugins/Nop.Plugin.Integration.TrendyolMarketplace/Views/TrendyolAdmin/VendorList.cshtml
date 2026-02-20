@@ -1,0 +1,105 @@
+@model VendorCredentialSearchModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Integration.TrendyolMarketplace.Menu.Admin.VendorList").Text;
+    NopHtml.SetActiveMenuItemSystemName("Marketplace.Trendyol.VendorList");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("Plugins.Integration.TrendyolMarketplace.Menu.Admin.VendorList")
+    </h1>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-default card-search">
+            <div class="card-body">
+                <div class="row align-items-end">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>@T("Plugins.Integration.TrendyolMarketplace.Dashboard.Status")</label>
+                            <select id="IsActive" class="form-control">
+                                <option value="">@T("Plugins.Integration.TrendyolMarketplace.Common.All")</option>
+                                <option value="true">@T("Plugins.Integration.TrendyolMarketplace.Dashboard.Active")</option>
+                                <option value="false">@T("Plugins.Integration.TrendyolMarketplace.Dashboard.Inactive")</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div>
+                                <button type="button" class="btn btn-primary" id="btnSearch">
+                                    <i class="fas fa-search"></i>
+                                    @T("Plugins.Integration.TrendyolMarketplace.Common.Search")
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-default">
+            <div class="card-body">
+                @await Html.PartialAsync("Table", new DataTablesModel
+                {
+                    Name = "vendors-grid",
+                    UrlRead = new DataUrl("VendorCredentialList", "TrendyolAdmin", null),
+                    SearchButtonId = "btnSearch",
+                    Filters = new List<FilterParameter>
+                    {
+                        new FilterParameter(nameof(Model.IsActive))
+                    },
+                    Length = Model.PageSize,
+                    LengthMenu = Model.AvailablePageSizes,
+                    ColumnCollection = new List<ColumnProperty>
+                    {
+                        new ColumnProperty(nameof(VendorCredentialModel.VendorName))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Dashboard.Vendor").Text,
+                            Width = "200"
+                        },
+                        new ColumnProperty(nameof(VendorCredentialModel.TrendyolSupplierId))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Vendor.Fields.TrendyolSupplierId").Text,
+                            Width = "150"
+                        },
+                        new ColumnProperty(nameof(VendorCredentialModel.ApiKey))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Vendor.Fields.ApiKey").Text,
+                            Width = "150"
+                        },
+                        new ColumnProperty(nameof(VendorCredentialModel.IsActive))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Vendor.Fields.IsActive").Text,
+                            Width = "80",
+                            ClassName = NopColumnClassDefaults.CenterAll,
+                            Render = new RenderBoolean()
+                        },
+                        new ColumnProperty(nameof(VendorCredentialModel.AutoSyncEnabled))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Vendor.Fields.AutoSyncEnabled").Text,
+                            Width = "80",
+                            ClassName = NopColumnClassDefaults.CenterAll,
+                            Render = new RenderBoolean()
+                        },
+                        new ColumnProperty(nameof(VendorCredentialModel.SyncIntervalMinutes))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Vendor.Fields.SyncIntervalMinutes").Text,
+                            Width = "100",
+                            ClassName = NopColumnClassDefaults.CenterAll
+                        },
+                        new ColumnProperty(nameof(VendorCredentialModel.LastSyncOnDisplay))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Dashboard.LastSync").Text,
+                            Width = "150"
+                        }
+                    }
+                })
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,11 @@
+/* ========================================
+   PACIFIC THEME - Gold Color Preset
+   Default: #c09e6c
+   ======================================== */
+
+:root {
+  --pacific-primary: #c09e6c;
+  --pacific-primary-hover: #a68756;
+  --pacific-primary-light: #d4b88a;
+  --pacific-primary-rgb: 192, 158, 108;
+}

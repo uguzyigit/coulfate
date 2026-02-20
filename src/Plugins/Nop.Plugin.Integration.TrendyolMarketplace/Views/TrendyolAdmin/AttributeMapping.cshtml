@@ -1,0 +1,165 @@
+@model AttributeMappingSearchModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Integration.TrendyolMarketplace.AttributeMapping.Title").Text;
+    NopHtml.SetActiveMenuItemSystemName("Marketplace.Trendyol.AttributeMapping");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("Plugins.Integration.TrendyolMarketplace.AttributeMapping.Title")
+    </h1>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-default card-search">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="TrendyolCategoryId" class="form-control">
+                                <option value="">All Categories</option>
+                                @foreach (var category in Model.AvailableCategories)
+                                {
+                                    <option value="@category.Value">@category.Text</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>Search Attribute</label>
+                            <input type="text" id="SearchTerm" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>Variant Only</label>
+                            <select id="IsVariant" class="form-control">
+                                <option value="">All</option>
+                                <option value="true">Variant Only</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>Mapped</label>
+                            <select id="IsMapped" class="form-control">
+                                <option value="">All</option>
+                                <option value="true">Mapped</option>
+                                <option value="false">Unmapped</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <button type="button" class="btn btn-primary" id="btnSearch">
+                            <i class="fas fa-search"></i>
+                            Search
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-default">
+            <div class="card-body">
+                @await Html.PartialAsync("Table", new DataTablesModel
+                {
+                    Name = "attributes-grid",
+                    UrlRead = new DataUrl("AttributeMappingList", "TrendyolAdmin", null),
+                    SearchButtonId = "btnSearch",
+                    Filters = new List<FilterParameter>
+                    {
+                        new FilterParameter(nameof(Model.TrendyolCategoryId)),
+                        new FilterParameter(nameof(Model.SearchTerm)),
+                        new FilterParameter(nameof(Model.IsVariant)),
+                        new FilterParameter(nameof(Model.IsMapped))
+                    },
+                    Length = Model.PageSize,
+                    LengthMenu = Model.AvailablePageSizes,
+                    ColumnCollection = new List<ColumnProperty>
+                    {
+                        new ColumnProperty(nameof(AttributeMappingModel.TrendyolAttributeName))
+                        {
+                            Title = "Trendyol Attribute",
+                            Width = "200"
+                        },
+                        new ColumnProperty(nameof(AttributeMappingModel.TrendyolCategoryId))
+                        {
+                            Title = "Category ID",
+                            Width = "100"
+                        },
+                        new ColumnProperty(nameof(AttributeMappingModel.IsRequired))
+                        {
+                            Title = "Required",
+                            Width = "80",
+                            ClassName = NopColumnClassDefaults.CenterAll,
+                            Render = new RenderBoolean()
+                        },
+                        new ColumnProperty(nameof(AttributeMappingModel.IsVariantAttribute))
+                        {
+                            Title = "Variant",
+                            Width = "80",
+                            ClassName = NopColumnClassDefaults.CenterAll,
+                            Render = new RenderBoolean()
+                        },
+                        new ColumnProperty(nameof(AttributeMappingModel.MappingTypeDisplay))
+                        {
+                            Title = "Mapping Type",
+                            Width = "120"
+                        },
+                        new ColumnProperty(nameof(AttributeMappingModel.Id))
+                        {
+                            Title = "Action",
+                            Width = "100",
+                            ClassName = NopColumnClassDefaults.Button,
+                            Render = new RenderCustom("renderEditButton")
+                        }
+                    }
+                })
+            </div>
+        </div>
+    </div>
+</section>
+
+<script asp-location="Footer">
+    function renderEditButton(data, type, row) {
+        return '<button type="button" class="btn btn-sm btn-primary" onclick="editMapping(' + row.Id + ', \'' + row.MappingType + '\')"><i class="fas fa-edit"></i></button>';
+    }
+
+    function editMapping(id, currentMappingType) {
+        var mappingType = prompt('Enter Mapping Type (0=None, 1=SpecificationAttribute, 2=ProductAttribute):', currentMappingType || '0');
+        if (mappingType !== null) {
+            var attributeId = null;
+            if (mappingType === '1') {
+                attributeId = prompt('Enter NopCommerce Specification Attribute ID:');
+            } else if (mappingType === '2') {
+                attributeId = prompt('Enter NopCommerce Product Attribute ID:');
+            }
+
+            $.ajax({
+                url: '@Url.Action("UpdateAttributeMapping", "TrendyolAdmin")',
+                type: 'POST',
+                data: {
+                    id: id,
+                    mappingType: parseInt(mappingType),
+                    nopSpecificationAttributeId: mappingType === '1' ? attributeId : null,
+                    nopProductAttributeId: mappingType === '2' ? attributeId : null
+                },
+                success: function(data) {
+                    if (data.success) {
+                        displayBarNotification('Mapping updated successfully', 0, 5000);
+                        updateTable('#attributes-grid');
+                    } else {
+                        displayBarNotification(data.message, 1, 0);
+                    }
+                }
+            });
+        }
+    }
+</script>

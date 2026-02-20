@@ -1,0 +1,81 @@
+@model Nop.Plugin.Widgets.GoogleAnalytics4.Components.GA4EventModel
+@using Newtonsoft.Json
+@using Nop.Plugin.Widgets.GoogleAnalytics4.Domain
+@using Nop.Plugin.Widgets.GoogleAnalytics4.Services
+
+@{
+    var items = Model.Items ?? (Model.Item != null ? new List<GA4Item> { Model.Item } : new List<GA4Item>());
+    var firstItem = items.FirstOrDefault();
+
+    var itemsJson = JsonConvert.SerializeObject(items.Select((item, index) => new {
+        item_id = item.ItemId,
+        item_name = item.ItemName,
+        item_brand = item.ItemBrand,
+        item_category = item.ItemCategory,
+        item_category2 = item.ItemCategory2,
+        item_category3 = item.ItemCategory3,
+        item_variant = item.ItemVariant,
+        item_list_id = item.ItemListId,
+        item_list_name = item.ItemListName,
+        price = item.Price,
+        quantity = item.Quantity,
+        index = item.Index ?? index
+    }), new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+}
+
+<script>
+(function() {
+    if (typeof ga4Event !== 'function') {
+        console.warn('[GA4] ga4Event function not found. Make sure GA4 base script is loaded.');
+        return;
+    }
+
+    var eventParams = {
+        currency: '@Model.Currency',
+        value: @Model.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        items: @Html.Raw(itemsJson)
+    };
+
+    @if (!string.IsNullOrEmpty(Model.ListId))
+    {
+        <text>eventParams.item_list_id = '@Model.ListId';</text>
+    }
+    @if (!string.IsNullOrEmpty(Model.ListName))
+    {
+        <text>eventParams.item_list_name = '@Model.ListName';</text>
+    }
+    @if (!string.IsNullOrEmpty(Model.SearchTerm))
+    {
+        <text>eventParams.search_term = '@Model.SearchTerm';</text>
+    }
+
+    ga4Event('@Model.EventName', eventParams);
+
+    @if (Model.EventName == GA4Defaults.EventViewItem && firstItem != null)
+    {
+        // Store product data for add_to_cart tracking
+        <text>
+    window.ga4ProductData = {
+        id: '@firstItem.ItemId',
+        name: '@Html.Raw(firstItem.ItemName?.Replace("'", "\\'"))',
+        brand: '@Html.Raw(firstItem.ItemBrand?.Replace("'", "\\'") ?? "")',
+        category: '@Html.Raw(firstItem.ItemCategory?.Replace("'", "\\'") ?? "")',
+        price: @firstItem.Price.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        currency: '@Model.Currency'
+    };
+        </text>
+    }
+
+    @if (Model.EventName == GA4Defaults.EventBeginCheckout || Model.EventName == GA4Defaults.EventViewCart)
+    {
+        // Store checkout data for shipping/payment tracking
+        <text>
+    window.ga4CheckoutData = {
+        currency: '@Model.Currency',
+        value: @Model.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        items: @Html.Raw(itemsJson)
+    };
+        </text>
+    }
+})();
+</script>

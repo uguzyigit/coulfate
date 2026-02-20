@@ -1,0 +1,14 @@
+{
+  "Group": "Marketplace",
+  "FriendlyName": "Vendor Extensions",
+  "SystemName": "Marketplace.VendorExtensions",
+  "Version": "2.1.0",
+  "SupportedVersions": [ "4.90" ],
+  "Author": "Coulfate",
+  "DisplayOrder": 3,
+  "FileName": "Nop.Plugin.Marketplace.VendorExtensions.dll",
+  "Description": "Vendor account management and transaction tracking. Manage vendor current accounts (cari hesap), track all financial transactions, and maintain vendor balances.",
+  "LimitedToStores": [],
+  "LimitedToCustomerRoles": [],
+  "DependsOnSystemNames": [ "Marketplace.Core" ]
+}

@@ -14,23 +14,14 @@ public class RouteProvider : IRouteProvider
         // Configure route (for plugin configuration page)
         endpointRouteBuilder.MapControllerRoute(
             name: "Plugin.Marketplace.Core.Configure",
-            pattern: "Admin/MarketplaceVendor/Configure",
-            defaults: new { controller = "MarketplaceVendor", action = "Configure", area = "Admin" });
+            pattern: "Admin/MarketplaceCore/Configure",
+            defaults: new { controller = "MarketplaceCoreAdmin", action = "Configure", area = "Admin" });
 
+        // Vendor Extension route (marketplace-specific vendor info)
         endpointRouteBuilder.MapControllerRoute(
-            name: "Plugin.Marketplace.Core.Vendor.List",
-            pattern: "Admin/Marketplace/Vendor/List",
-            defaults: new { controller = "MarketplaceVendor", action = "Index", area = "Admin" });
-
-        endpointRouteBuilder.MapControllerRoute(
-            name: "Plugin.Marketplace.Core.Vendor.Create",
-            pattern: "Admin/Marketplace/Vendor/Create",
-            defaults: new { controller = "MarketplaceVendor", action = "Create", area = "Admin" });
-
-        endpointRouteBuilder.MapControllerRoute(
-            name: "Plugin.Marketplace.Core.Vendor.Edit",
-            pattern: "Admin/Marketplace/Vendor/Edit/{id}",
-            defaults: new { controller = "MarketplaceVendor", action = "Edit", area = "Admin" });
+            name: "Plugin.Marketplace.Core.VendorExtension",
+            pattern: "Admin/MarketplaceCore/VendorExtension/{vendorId}",
+            defaults: new { controller = "MarketplaceCoreAdmin", action = "VendorExtension", area = "Admin" });
     }
 
     public int Priority => 0;

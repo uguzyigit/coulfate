@@ -1,0 +1,187 @@
+@model CategoryMappingSearchModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Integration.TrendyolMarketplace.CategoryMapping.Title").Text;
+    NopHtml.SetActiveMenuItemSystemName("Marketplace.Trendyol.CategoryMapping");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("Plugins.Integration.TrendyolMarketplace.CategoryMapping.Title")
+    </h1>
+    <div class="float-right">
+        <button type="button" class="btn btn-success" id="btnSyncCategories">
+            <i class="fas fa-sync-alt"></i>
+            @T("Plugins.Integration.TrendyolMarketplace.Button.SyncCategories")
+        </button>
+        <button type="button" class="btn btn-info" id="btnAutoMap">
+            <i class="fas fa-magic"></i>
+            @T("Plugins.Integration.TrendyolMarketplace.Button.AutoMap")
+        </button>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-default card-search">
+            <div class="card-body">
+                <div class="row align-items-end">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>@T("Plugins.Integration.TrendyolMarketplace.CategoryMapping.SearchTrendyolCategory")</label>
+                            <input type="text" id="SearchTrendyolCategory" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>@T("Plugins.Integration.TrendyolMarketplace.CategoryMapping.UnmappedOnly")</label>
+                            <select id="UnmappedOnly" class="form-control">
+                                <option value="">@T("Plugins.Integration.TrendyolMarketplace.Common.All")</option>
+                                <option value="true">@T("Plugins.Integration.TrendyolMarketplace.CategoryMapping.UnmappedOnly")</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>@T("Plugins.Integration.TrendyolMarketplace.CategoryMapping.LeafOnly")</label>
+                            <select id="LeafOnly" class="form-control">
+                                <option value="">@T("Plugins.Integration.TrendyolMarketplace.Common.All")</option>
+                                <option value="true">@T("Plugins.Integration.TrendyolMarketplace.CategoryMapping.LeafOnly")</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div>
+                                <button type="button" class="btn btn-primary btn-block" id="btnSearch">
+                                    <i class="fas fa-search"></i>
+                                    @T("Plugins.Integration.TrendyolMarketplace.Common.Search")
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-default">
+            <div class="card-body">
+                @await Html.PartialAsync("Table", new DataTablesModel
+                {
+                    Name = "categories-grid",
+                    UrlRead = new DataUrl("CategoryMappingList", "TrendyolAdmin", null),
+                    SearchButtonId = "btnSearch",
+                    Filters = new List<FilterParameter>
+                    {
+                        new FilterParameter(nameof(Model.SearchTrendyolCategory)),
+                        new FilterParameter(nameof(Model.UnmappedOnly)),
+                        new FilterParameter(nameof(Model.LeafOnly))
+                    },
+                    Length = Model.PageSize,
+                    LengthMenu = Model.AvailablePageSizes,
+                    ColumnCollection = new List<ColumnProperty>
+                    {
+                        new ColumnProperty(nameof(CategoryMappingModel.TrendyolCategoryPath))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.CategoryMapping.TrendyolCategory").Text,
+                            Width = "300"
+                        },
+                        new ColumnProperty(nameof(CategoryMappingModel.NopCategoryName))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.CategoryMapping.NopCategory").Text,
+                            Width = "200"
+                        },
+                        new ColumnProperty(nameof(CategoryMappingModel.IsAutoMapped))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.CategoryMapping.IsAutoMapped").Text,
+                            Width = "80",
+                            ClassName = NopColumnClassDefaults.CenterAll,
+                            Render = new RenderBoolean()
+                        },
+                        new ColumnProperty(nameof(CategoryMappingModel.IsLeaf))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.CategoryMapping.IsLeaf").Text,
+                            Width = "60",
+                            ClassName = NopColumnClassDefaults.CenterAll,
+                            Render = new RenderBoolean()
+                        },
+                        new ColumnProperty(nameof(CategoryMappingModel.Id))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Common.Action").Text,
+                            Width = "100",
+                            ClassName = NopColumnClassDefaults.Button,
+                            Render = new RenderCustom("renderEditButton")
+                        }
+                    }
+                })
+            </div>
+        </div>
+    </div>
+</section>
+
+<script asp-location="Footer">
+    function renderEditButton(data, type, row) {
+        return '<button type="button" class="btn btn-sm btn-primary" onclick="editMapping(' + row.Id + ', ' + (row.NopCategoryId || 'null') + ')"><i class="fas fa-edit"></i></button>';
+    }
+
+    function editMapping(id, currentNopCategoryId) {
+        var newCategoryId = prompt('@T("Plugins.Integration.TrendyolMarketplace.CategoryMapping.EnterCategoryId"):', currentNopCategoryId || '');
+        if (newCategoryId !== null) {
+            $.ajax({
+                url: '@Url.Action("UpdateCategoryMapping", "TrendyolAdmin")',
+                type: 'POST',
+                data: { id: id, nopCategoryId: newCategoryId === '0' ? null : newCategoryId },
+                success: function(data) {
+                    if (data.success) {
+                        displayBarNotification('@T("Plugins.Integration.TrendyolMarketplace.Common.MappingUpdated")', 0, 5000);
+                        updateTable('#categories-grid');
+                    } else {
+                        displayBarNotification(data.message, 1, 0);
+                    }
+                }
+            });
+        }
+    }
+
+    $(document).ready(function () {
+        $('#btnSyncCategories').click(function () {
+            var btn = $(this);
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> @T("Plugins.Integration.TrendyolMarketplace.Dashboard.Syncing")...');
+
+            $.ajax({
+                url: '@Url.Action("SyncCategories", "TrendyolAdmin")',
+                type: 'POST',
+                success: function (data) {
+                    if (data.success) {
+                        displayBarNotification(data.message, 0, 5000);
+                        updateTable('#categories-grid');
+                    } else {
+                        displayBarNotification(data.message, 1, 0);
+                    }
+                },
+                complete: function () {
+                    btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> @T("Plugins.Integration.TrendyolMarketplace.Button.SyncCategories")');
+                }
+            });
+        });
+
+        $('#btnAutoMap').click(function () {
+            var btn = $(this);
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> @T("Plugins.Integration.TrendyolMarketplace.Common.AutoMapping")...');
+
+            $.ajax({
+                url: '@Url.Action("SyncCategories", "TrendyolAdmin")',
+                type: 'POST',
+                success: function (data) {
+                    displayBarNotification(data.message, 0, 5000);
+                    updateTable('#categories-grid');
+                },
+                complete: function () {
+                    btn.prop('disabled', false).html('<i class="fas fa-magic"></i> @T("Plugins.Integration.TrendyolMarketplace.Button.AutoMap")');
+                }
+            });
+        });
+    });
+</script>

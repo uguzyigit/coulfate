@@ -1,0 +1,105 @@
+@{
+    Layout = "_ConfigurePlugin";
+}
+
+@model Nop.Plugin.Payments.Iyzico.Models.ConfigurationModel
+
+<form asp-controller="PaymentIyzico" asp-action="Configure" method="post">
+    <div class="cards-group">
+        <div class="card card-default">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-credit-card"></i>
+                    iyzico Payment Settings
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="UseSandbox" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="UseSandbox" />
+                        <span asp-validation-for="UseSandbox"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="ApiKey" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="ApiKey" />
+                        <span asp-validation-for="ApiKey"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="SecretKey" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="SecretKey" />
+                        <span asp-validation-for="SecretKey"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="AdditionalFee" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="AdditionalFee" />
+                        <span asp-validation-for="AdditionalFee"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="AdditionalFeePercentage" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="AdditionalFeePercentage" />
+                        <span asp-validation-for="AdditionalFeePercentage"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="AutoApprovalDays" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="AutoApprovalDays" />
+                        <span asp-validation-for="AutoApprovalDays"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="EnableAutoApproval" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="EnableAutoApproval" />
+                        <span asp-validation-for="EnableAutoApproval"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3">
+                        <nop-label asp-for="AutoCreateSubMerchant" />
+                    </div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="AutoCreateSubMerchant" />
+                        <span asp-validation-for="AutoCreateSubMerchant"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button type="submit" class="btn btn-primary">
+                    <i class="far fa-save"></i>
+                    @T("Admin.Common.Save")
+                </button>
+            </div>
+        </div>
+    </div>
+</form>

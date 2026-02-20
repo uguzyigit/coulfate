@@ -1,0 +1,240 @@
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        <i class="fas fa-chart-line"></i>
+        @T("Plugins.Marketplace.Commission.Reports.Title")
+    </h1>
+</div>
+
+<div class="content">
+    <div class="card card-default">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="form-group">
+                        <label>@T("Plugins.Marketplace.Commission.Reports.StartDate")</label>
+                        <input type="date" id="start-date" class="form-control" value="@DateTime.UtcNow.AddMonths(-1).ToString("yyyy-MM-dd")" />
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="form-group">
+                        <label>@T("Plugins.Marketplace.Commission.Reports.EndDate")</label>
+                        <input type="date" id="end-date" class="form-control" value="@DateTime.UtcNow.ToString("yyyy-MM-dd")" />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button type="button" id="btn-filter" class="btn btn-info btn-block">
+                            <i class="fas fa-search"></i> @T("Plugins.Marketplace.Commission.Reports.ApplyFilter")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-default mt-3">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-chart-pie"></i> @T("Plugins.Marketplace.Commission.Reports.Summary")
+            </h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-2 col-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3 id="total-orders">0</h3>
+                            <p>@T("Plugins.Marketplace.Commission.Reports.TotalOrders")</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3 id="total-revenue">0 TL</h3>
+                            <p>@T("Plugins.Marketplace.Commission.Reports.Revenue")</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-lira-sign"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3 id="total-commission">0 TL</h3>
+                            <p>@T("Plugins.Marketplace.Commission.Reports.Commission")</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-percent"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-6">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h3 id="total-fee">0 TL</h3>
+                            <p>@T("Plugins.Marketplace.Commission.Reports.PlatformFee")</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-hand-holding-usd"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-6">
+                    <div class="small-box bg-secondary">
+                        <div class="inner">
+                            <h3 id="total-tax">0 TL</h3>
+                            <p>@T("Plugins.Marketplace.Commission.Reports.TaxWithholding")</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-6">
+                    <div class="small-box bg-primary">
+                        <div class="inner">
+                            <h3 id="vendor-net">0 TL</h3>
+                            <p>@T("Plugins.Marketplace.Commission.Reports.VendorNet")</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-default">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-list"></i> @T("Plugins.Marketplace.Commission.Reports.Details")
+            </h3>
+            <div class="card-tools">
+                <button type="button" class="btn btn-success btn-sm" id="btn-export">
+                    <i class="fas fa-file-excel"></i> @T("Plugins.Marketplace.Commission.Reports.ExportExcel")
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered table-striped" id="report-table">
+                <thead>
+                    <tr>
+                        <th>@T("Plugins.Marketplace.Commission.Reports.OrderNumber")</th>
+                        <th>@T("Plugins.Marketplace.Commission.Reports.Vendor")</th>
+                        <th>@T("Plugins.Marketplace.Commission.Reports.Product")</th>
+                        <th>@T("Plugins.Marketplace.Commission.Reports.NetPrice")</th>
+                        <th>@T("Plugins.Marketplace.Commission.Reports.Rate")</th>
+                        <th>@T("Plugins.Marketplace.Commission.Reports.Commission")</th>
+                        <th>@T("Plugins.Marketplace.Commission.Reports.Fee")</th>
+                        <th>@T("Plugins.Marketplace.Commission.Reports.Tax")</th>
+                        <th>@T("Plugins.Marketplace.Commission.Reports.VendorNet")</th>
+                        <th>@T("Plugins.Marketplace.Commission.Reports.Date")</th>
+                    </tr>
+                </thead>
+                <tbody id="report-tbody">
+                    <tr>
+                        <td colspan="10" class="text-center">@T("Admin.Common.Loading")</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    var translations = {
+        error: '@T("Admin.Common.Error").Text',
+        noData: '@T("Admin.Common.NoData").Text',
+        exportSoon: '@T("Plugins.Marketplace.Commission.Reports.ExportSoon").Text'
+    };
+
+    function getAntiForgeryToken() {
+        return $('input[name="__RequestVerificationToken"]').val();
+    }
+
+    function formatMoney(amount) {
+        return parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + ' TL';
+    }
+
+    function loadReport() {
+        var startDate = $('#start-date').val();
+        var endDate = $('#end-date').val();
+
+        $.ajax({
+            url: '@Url.Action("GetReportData", "Commission", new { area = "Admin" })',
+            type: 'POST',
+            data: {
+                startDate: startDate,
+                endDate: endDate,
+                __RequestVerificationToken: getAntiForgeryToken()
+            },
+            success: function(result) {
+                if (result.error) {
+                    alert(translations.error + ': ' + result.error);
+                    return;
+                }
+
+                // Update summary
+                var s = result.summary;
+                $('#total-orders').text(s.TotalOrders || 0);
+                $('#total-revenue').text(formatMoney(s.TotalRevenue || 0));
+                $('#total-commission').text(formatMoney(s.TotalCommission || 0));
+                $('#total-fee').text(formatMoney(s.TotalFee || 0));
+                $('#total-tax').text(formatMoney(s.TotalTax || 0));
+                $('#vendor-net').text(formatMoney(s.TotalVendorNet || 0));
+
+                // Update table
+                var tbody = $('#report-tbody');
+                tbody.empty();
+
+                if (result.details && result.details.length > 0) {
+                    $.each(result.details, function(i, item) {
+                        var row = '<tr>' +
+                            '<td><a href="/Admin/Order/Edit/' + item.OrderId + '" target="_blank">#' + item.OrderId + '</a></td>' +
+                            '<td>' + (item.VendorName || '-') + '</td>' +
+                            '<td>' + (item.ProductName || '-') + '</td>' +
+                            '<td>' + formatMoney(item.NetPrice) + '</td>' +
+                            '<td>' + Math.round(item.CommissionRate) + '%</td>' +
+                            '<td>' + formatMoney(item.CommissionAmount) + '</td>' +
+                            '<td>' + formatMoney(item.MarketplaceFee) + '</td>' +
+                            '<td>' + formatMoney(item.TaxWithholding) + '</td>' +
+                            '<td class="text-success font-weight-bold">' + formatMoney(item.VendorNetAmount) + '</td>' +
+                            '<td>' + new Date(item.CreatedOnUtc).toLocaleDateString('tr-TR') + '</td>' +
+                            '</tr>';
+                        tbody.append(row);
+                    });
+                } else {
+                    tbody.html('<tr><td colspan="10" class="text-center">' + translations.noData + '</td></tr>');
+                }
+            },
+            error: function(xhr) {
+                alert(translations.error + ': ' + xhr.responseText);
+                console.error('Error:', xhr);
+            }
+        });
+    }
+
+    $('#btn-filter').click(function() {
+        loadReport();
+    });
+
+    $('#btn-export').click(function() {
+        alert(translations.exportSoon);
+    });
+
+    // Load on page load
+    loadReport();
+});
+</script>

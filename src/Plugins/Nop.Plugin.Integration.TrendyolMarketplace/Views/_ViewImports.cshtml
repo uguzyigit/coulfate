@@ -1,0 +1,22 @@
+@inherits Nop.Web.Framework.Mvc.Razor.NopRazorPage<TModel>
+
+@inject INopHtmlHelper NopHtml
+@inject IWorkContext workContext
+
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@addTagHelper *, Nop.Web.Framework
+
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
+@using Microsoft.AspNetCore.Routing
+@using Nop.Core
+@using Nop.Core.Domain.Catalog
+@using Nop.Services.Common
+@using Nop.Web.Framework
+@using Nop.Web.Framework.Extensions
+@using Nop.Web.Framework.Models
+@using Nop.Web.Framework.Models.DataTables
+@using Nop.Web.Framework.UI
+@using Nop.Plugin.Integration.TrendyolMarketplace
+@using Nop.Plugin.Integration.TrendyolMarketplace.Models
+@using Nop.Plugin.Integration.TrendyolMarketplace.Domain

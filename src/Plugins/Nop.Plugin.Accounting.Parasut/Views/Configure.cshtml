@@ -1,0 +1,199 @@
+@using Nop.Plugin.Accounting.Parasut.Models.Configuration
+@model Nop.Plugin.Accounting.Parasut.Models.Configuration.ConfigurationModel
+
+@{
+    Layout = "_ConfigurePlugin";
+}
+
+<form asp-controller="Parasut" asp-action="Configure" asp-area="Admin" method="post">
+    <div class="cards-group">
+        
+        <!-- API Settings -->
+        <div class="card card-default">
+            <div class="card-header">
+                <div class="card-title"><i class="fas fa-plug"></i> Paraşüt API Ayarları</div>
+            </div>
+            <div class="card-body">
+                <div class="form-group row">
+                    <div class="col-md-3"><nop-label asp-for="Enabled" /></div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="Enabled" />
+                        <span asp-validation-for="Enabled"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3"><nop-label asp-for="CompanyId" /></div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="CompanyId" />
+                        <span asp-validation-for="CompanyId"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3"><nop-label asp-for="ClientId" /></div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="ClientId" />
+                        <span asp-validation-for="ClientId"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3"><nop-label asp-for="ClientSecret" /></div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="ClientSecret" />
+                        <span asp-validation-for="ClientSecret"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3"><nop-label asp-for="Username" /></div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="Username" />
+                        <span asp-validation-for="Username"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3"><nop-label asp-for="Password" /></div>
+                    <div class="col-md-9">
+                        <input asp-for="Password" type="password" class="form-control" />
+                        <span asp-validation-for="Password"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Strategy Settings (YENİ) -->
+        <div class="card card-default">
+            <div class="card-header">
+                <div class="card-title"><i class="fas fa-calendar-check"></i> Faturalama Stratejisi</div>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Önerilen:</strong> "İade Süresi Dolduktan Sonra" stratejisi en güvenlidir. 
+                    İade durumunda kırmızı fatura kesmek gerekmez.
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3"><nop-label asp-for="InvoiceStrategyId" /></div>
+                    <div class="col-md-9">
+                        <nop-select asp-for="InvoiceStrategyId" asp-items="Model.AvailableInvoiceStrategies" />
+                        <span asp-validation-for="InvoiceStrategyId"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row" id="return-period-settings">
+                    <div class="col-md-12">
+                        <div class="card card-secondary">
+                            <div class="card-header">
+                                <div class="card-title">İade Süresi Ayarları</div>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group row">
+                                    <div class="col-md-3"><nop-label asp-for="ReturnPeriodDays" /></div>
+                                    <div class="col-md-9">
+                                        <nop-editor asp-for="ReturnPeriodDays" />
+                                        <span asp-validation-for="ReturnPeriodDays"></span>
+                                        <span class="form-text text-muted">
+                                            Tüketici Kanunu standart: 14 gün
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group row">
+                                    <div class="col-md-3"><nop-label asp-for="StartFromId" /></div>
+                                    <div class="col-md-9">
+                                        <nop-select asp-for="StartFromId" asp-items="Model.AvailableStartFromOptions" />
+                                        <span asp-validation-for="StartFromId"></span>
+                                        <span class="form-text text-muted">
+                                            Önerilen: Teslim Tarihinden İtibaren
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group row">
+                                    <div class="col-md-3"><nop-label asp-for="AutoProcessExpiredReturnPeriods" /></div>
+                                    <div class="col-md-9">
+                                        <nop-editor asp-for="AutoProcessExpiredReturnPeriods" />
+                                        <span asp-validation-for="AutoProcessExpiredReturnPeriods"></span>
+                                        <span class="form-text text-muted">
+                                            Scheduled task her gün otomatik çalışır ve iade süresi dolan siparişleri faturalar
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Settings -->
+        <div class="card card-default">
+            <div class="card-header">
+                <div class="card-title"><i class="fas fa-file-invoice"></i> Fatura Ayarları</div>
+            </div>
+            <div class="card-body">
+                <div class="form-group row">
+                    <div class="col-md-3"><nop-label asp-for="DefaultVatRate" /></div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="DefaultVatRate" />
+                        <span asp-validation-for="DefaultVatRate"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3"><nop-label asp-for="AutoCreateCommissionInvoice" /></div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="AutoCreateCommissionInvoice" />
+                        <span asp-validation-for="AutoCreateCommissionInvoice"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3"><nop-label asp-for="AutoCreateShippingInvoice" /></div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="AutoCreateShippingInvoice" />
+                        <span asp-validation-for="AutoCreateShippingInvoice"></span>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col-md-3"><nop-label asp-for="AutoCreatePenaltyInvoice" /></div>
+                    <div class="col-md-9">
+                        <nop-editor asp-for="AutoCreatePenaltyInvoice" />
+                        <span asp-validation-for="AutoCreatePenaltyInvoice"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="card card-default">
+            <div class="card-footer">
+                <button type="submit" class="btn btn-primary">
+                    <i class="far fa-save"></i> Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    $(document).ready(function() {
+        // İade süresi ayarlarını göster/gizle
+        function toggleReturnPeriodSettings() {
+            var strategy = $('#InvoiceStrategyId').val();
+            if (strategy == '3') { // AfterReturnPeriod
+                $('#return-period-settings').show();
+            } else {
+                $('#return-period-settings').hide();
+            }
+        }
+        
+        $('#InvoiceStrategyId').change(toggleReturnPeriodSettings);
+        toggleReturnPeriodSettings();
+    });
+</script>

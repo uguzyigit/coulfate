@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8f8f8"/>
+      <stop offset="100%" style="stop-color:#e8e8e8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="600" fill="url(#bg)"/>
+
+  <!-- Header -->
+  <rect x="0" y="0" width="800" height="80" fill="#2c3e50"/>
+  <text x="50" y="50" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#ffffff">PACIFIC</text>
+  <rect x="250" y="28" width="300" height="36" rx="4" fill="#ffffff"/>
+  <text x="270" y="52" font-family="Arial, sans-serif" font-size="12" fill="#999">Search products...</text>
+
+  <!-- Navigation -->
+  <rect x="0" y="80" width="800" height="50" fill="#f5f5f5"/>
+  <text x="100" y="112" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#333">HOME</text>
+  <text x="180" y="112" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#333">CATEGORIES</text>
+  <text x="300" y="112" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#333">PRODUCTS</text>
+  <text x="410" y="112" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#333">ABOUT</text>
+
+  <!-- Hero Section -->
+  <rect x="0" y="130" width="800" height="200" fill="#e67e22"/>
+  <text x="50" y="210" font-family="Georgia, serif" font-size="36" font-weight="bold" fill="#ffffff">Modern E-Commerce</text>
+  <text x="50" y="250" font-family="Arial, sans-serif" font-size="16" fill="#ffffff" opacity="0.9">Shop the latest products with confidence</text>
+  <rect x="50" y="270" width="150" height="40" rx="4" fill="#ffffff"/>
+  <text x="90" y="296" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#e67e22">SHOP NOW</text>
+
+  <!-- Categories -->
+  <text x="50" y="370" font-family="Georgia, serif" font-size="24" font-weight="600" fill="#333">Shop by Category</text>
+  <rect x="50" y="390" width="220" height="140" rx="8" fill="#ddd"/>
+  <rect x="290" y="390" width="220" height="140" rx="8" fill="#ddd"/>
+  <rect x="530" y="390" width="220" height="140" rx="8" fill="#ddd"/>
+
+  <!-- Footer -->
+  <rect x="0" y="550" width="800" height="50" fill="#2c3e50"/>
+  <text x="400" y="580" font-family="Arial, sans-serif" font-size="12" fill="#999" text-anchor="middle">Pacific Theme for NopCommerce 4.90</text>
+</svg>

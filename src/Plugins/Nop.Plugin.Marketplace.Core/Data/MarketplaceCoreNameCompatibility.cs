@@ -1,5 +1,5 @@
+using Marketplace.Abstractions.Domain;
 using Nop.Data.Mapping;
-using Nop.Plugin.Marketplace.Core.Domain;
 
 namespace Nop.Plugin.Marketplace.Core.Data;
 
@@ -29,7 +29,12 @@ public class MarketplaceCoreNameCompatibility : INameCompatibility
         { typeof(ProductCommission), "MarketplaceProductCommission" },
         { typeof(OrderCommission), "MarketplaceOrderCommission" },
         { typeof(VendorCurrentAccount), "MarketplaceVendorCurrentAccount" },
-        { typeof(VendorTransaction), "MarketplaceVendorTransaction" }
+        { typeof(VendorTransaction), "MarketplaceVendorTransaction" },
+        // Shipping entities
+        { typeof(ShippingProvider), "MarketplaceShippingProvider" },
+        { typeof(VendorShippingPreference), "MarketplaceVendorShippingPreference" },
+        { typeof(VendorShippingCredential), "MarketplaceVendorShippingCredential" },
+        { typeof(MarketplaceShipment), "MarketplaceShipment" }
     };
 
     public Dictionary<(Type, string), string> ColumnName => new();

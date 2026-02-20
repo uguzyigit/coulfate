@@ -1,0 +1,173 @@
+@model PerformanceListModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Marketplace.Performance.ProductPerformance").Text;
+    NopHtml.SetActiveMenuItemSystemName("Marketplace.Performance.Product");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("Plugins.Marketplace.Performance.ProductPerformance")
+    </h1>
+    @if (Model.IsAdmin)
+    {
+        <div class="float-right">
+            <button type="button" id="btnRecalculate" class="btn btn-warning btn-sm">
+                <i class="fas fa-calculator"></i> Skorlari Hesapla
+            </button>
+        </div>
+    }
+</div>
+
+<div id="diagnosticAlert" class="alert alert-info" style="display:none;"></div>
+<div id="errorAlert" class="alert alert-danger" style="display:none;"></div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="cards-group">
+            <div class="card card-default">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-chart-line"></i>
+                        @T("Plugins.Marketplace.Performance.ProductPerformance")
+                        <small>(Son 30 Gun)</small>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (Model.IsAdmin)
+                    {
+                        <div class="form-group row mb-3">
+                            <div class="col-md-3">
+                                <label>@T("Plugins.Marketplace.Performance.Vendor")</label>
+                            </div>
+                            <div class="col-md-4">
+                                <select id="vendorFilter" class="form-control">
+                                    @foreach (var vendor in Model.AvailableVendors)
+                                    {
+                                        var isSelected = vendor.Value == Model.VendorId.ToString();
+                                        <option value="@vendor.Value" selected="@isSelected">@vendor.Text</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" id="btnFilter" class="btn btn-primary">
+                                    <i class="fas fa-filter"></i> Filtrele
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    <table id="productPerformanceTable" class="table table-bordered table-hover dt-responsive nowrap" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Urun</th>
+                                <th>Goruntulenme</th>
+                                <th>Favori</th>
+                                <th>Sepete Ekleme</th>
+                                <th>Brut Siparis</th>
+                                <th>Donusum Orani</th>
+                                <th>Brut Satis Adedi</th>
+                                <th>Brut Ciro</th>
+                                <th>Skor</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script asp-location="Footer">
+    $(function () {
+        if (typeof addAntiForgeryToken !== 'function') {
+            window.addAntiForgeryToken = function(d) {
+                var token = $('input[name="__RequestVerificationToken"]').val();
+                if (token) d.__RequestVerificationToken = token;
+                return d;
+            };
+        }
+
+        var isAdmin = @Model.IsAdmin.ToString().ToLower();
+        var vendorId = @Model.VendorId;
+
+        var table = $('#productPerformanceTable').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '/Admin/MarketplacePerformance/ProductPerformanceData',
+                type: 'GET',
+                dataType: 'json',
+                data: function (d) {
+                    if (isAdmin) {
+                        var v = document.getElementById('vendorFilter');
+                        d.vendorId = v ? (parseInt(v.value) || 0) : 0;
+                    } else {
+                        d.vendorId = vendorId;
+                    }
+                    d.pageIndex = d.start / d.length;
+                    d.pageSize = d.length;
+                },
+                dataSrc: function(json) {
+                    return json && json.data ? json.data : [];
+                }
+            },
+            columns: [
+                {
+                    data: null,
+                    render: function (data) {
+                        var img = data.ThumbnailUrl ? '<img src="' + data.ThumbnailUrl + '" style="width:40px;height:40px;margin-right:8px;" />' : '';
+                        return img + '<strong>' + data.ProductName + '</strong><br/><small class="text-muted">' + (data.Sku || '') + '</small>';
+                    }
+                },
+                { data: 'Views' },
+                { data: 'Wishlist' },
+                { data: 'AddToCart' },
+                { data: 'GrossOrders' },
+                { data: 'ConversionRate' },
+                { data: 'GrossQty' },
+                { data: 'GrossRevenue', render: function (d) { return d.toLocaleString('tr-TR', { style: 'currency', currency: 'TRY' }); } },
+                { data: 'FinalScore', render: function (d) { return d.toFixed(2); } }
+            ],
+            pageLength: 25,
+            ordering: false,
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json'
+            }
+        });
+
+        if (isAdmin) {
+            $('#btnFilter').on('click', function () {
+                table.ajax.reload();
+            });
+
+            $('#btnRecalculate').on('click', function () {
+                $('#diagnosticAlert').hide();
+                $('#errorAlert').hide();
+                var btn = $(this);
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Hesaplaniyor...');
+                var postData = {};
+                addAntiForgeryToken(postData);
+                $.ajax({
+                    url: '/Admin/MarketplacePerformance/Recalculate',
+                    type: 'POST',
+                    data: postData,
+                    dataType: 'json',
+                    success: function (result) {
+                        btn.prop('disabled', false).html('<i class="fas fa-calculator"></i> Skorlari Hesapla');
+                        if (result && result.success) {
+                            $('#diagnosticAlert').html('<strong>Basarili:</strong> ' + result.message).show();
+                            table.ajax.reload();
+                        } else {
+                            $('#errorAlert').html('<strong>Hata:</strong> ' + (result ? result.message : 'Beklenmeyen yanit')).show();
+                        }
+                    },
+                    error: function (xhr) {
+                        btn.prop('disabled', false).html('<i class="fas fa-calculator"></i> Skorlari Hesapla');
+                        $('#errorAlert').html('<strong>AJAX Hata:</strong> HTTP ' + xhr.status).show();
+                    }
+                });
+            });
+        }
+    });
+</script>

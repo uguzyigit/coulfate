@@ -1,0 +1,132 @@
+@model TrendyolProductSearchModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Integration.TrendyolMarketplace.Products.Title").Text;
+    NopHtml.SetActiveMenuItemSystemName("VendorPanel.Trendyol.Products");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("Plugins.Integration.TrendyolMarketplace.Products.Title")
+    </h1>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-default card-search">
+            <div class="card-body">
+                <div class="row align-items-end">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>@T("Plugins.Integration.TrendyolMarketplace.Products.SearchTerm")</label>
+                            <input type="text" id="SearchTerm" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>@T("Plugins.Integration.TrendyolMarketplace.Products.ImportStatus")</label>
+                            <select id="ImportStatus" class="form-control">
+                                <option value="">@T("Plugins.Integration.TrendyolMarketplace.Common.All")</option>
+                                <option value="0">@T("Plugins.Integration.TrendyolMarketplace.ImportStatus.Pending")</option>
+                                <option value="1">@T("Plugins.Integration.TrendyolMarketplace.ImportStatus.Imported")</option>
+                                <option value="2">@T("Plugins.Integration.TrendyolMarketplace.ImportStatus.Failed")</option>
+                                <option value="3">@T("Plugins.Integration.TrendyolMarketplace.ImportStatus.Skipped")</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div>
+                                <button type="button" class="btn btn-primary btn-block" id="btnSearch">
+                                    <i class="fas fa-search"></i>
+                                    @T("Plugins.Integration.TrendyolMarketplace.Common.Search")
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-default">
+            <div class="card-body">
+                <input type="hidden" id="VendorId" value="@Model.VendorId" />
+
+                @await Html.PartialAsync("Table", new DataTablesModel
+                {
+                    Name = "products-grid",
+                    UrlRead = new DataUrl("ProductList", "TrendyolVendor", null),
+                    SearchButtonId = "btnSearch",
+                    Filters = new List<FilterParameter>
+                    {
+                        new FilterParameter(nameof(Model.VendorId)),
+                        new FilterParameter(nameof(Model.SearchTerm)),
+                        new FilterParameter(nameof(Model.ImportStatus))
+                    },
+                    Length = Model.PageSize,
+                    LengthMenu = Model.AvailablePageSizes,
+                    ColumnCollection = new List<ColumnProperty>
+                    {
+                        new ColumnProperty(nameof(TrendyolProductModel.TrendyolBarcode))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Products.Barcode").Text,
+                            Width = "120"
+                        },
+                        new ColumnProperty(nameof(TrendyolProductModel.TrendyolTitle))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Products.Title.Column").Text,
+                            Width = "250"
+                        },
+                        new ColumnProperty(nameof(TrendyolProductModel.LastTrendyolPrice))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Products.TrendyolPrice").Text,
+                            Width = "80",
+                            ClassName = NopColumnClassDefaults.CenterAll
+                        },
+                        new ColumnProperty(nameof(TrendyolProductModel.LastTrendyolStock))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Products.TrendyolStock").Text,
+                            Width = "80",
+                            ClassName = NopColumnClassDefaults.CenterAll
+                        },
+                        new ColumnProperty(nameof(TrendyolProductModel.ImportStatusDisplay))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Products.ImportStatus").Text,
+                            Width = "100",
+                            Render = new RenderCustom("renderImportStatus")
+                        },
+                        new ColumnProperty(nameof(TrendyolProductModel.NopProductName))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Products.NopProductId").Text,
+                            Width = "150"
+                        },
+                        new ColumnProperty(nameof(TrendyolProductModel.LastSyncOnDisplay))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.Products.LastSyncOnUtc").Text,
+                            Width = "120"
+                        }
+                    }
+                })
+            </div>
+        </div>
+    </div>
+</section>
+
+<script asp-location="Footer">
+    function renderImportStatus(data, type, row) {
+        switch(row.ImportStatus) {
+            case 0:
+                return '<span class="badge bg-secondary">@T("Plugins.Integration.TrendyolMarketplace.ImportStatus.Pending")</span>';
+            case 1:
+                return '<span class="badge bg-success">@T("Plugins.Integration.TrendyolMarketplace.ImportStatus.Imported")</span>';
+            case 2:
+                return '<span class="badge bg-danger" title="' + (row.ImportMessage || '') + '">@T("Plugins.Integration.TrendyolMarketplace.ImportStatus.Failed")</span>';
+            case 3:
+                return '<span class="badge bg-warning" title="' + (row.ImportMessage || '') + '">@T("Plugins.Integration.TrendyolMarketplace.ImportStatus.Skipped")</span>';
+            default:
+                return data;
+        }
+    }
+</script>

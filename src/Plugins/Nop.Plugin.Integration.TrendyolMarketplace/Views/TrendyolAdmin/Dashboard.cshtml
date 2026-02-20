@@ -1,0 +1,265 @@
+@model AdminDashboardModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Integration.TrendyolMarketplace.Dashboard.Title").Text;
+    NopHtml.SetActiveMenuItemSystemName("Marketplace.Trendyol.Dashboard");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("Plugins.Integration.TrendyolMarketplace.Dashboard.Title")
+    </h1>
+</div>
+
+<form asp-controller="TrendyolAdmin" asp-action="Dashboard" method="post" id="dashboard-form">
+</form>
+<section class="content">
+    <div class="container-fluid">
+        <!-- Statistics Cards -->
+        <div class="row">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                    <div class="inner">
+                        <h3>@Model.TotalVendors</h3>
+                        <p>@T("Plugins.Integration.TrendyolMarketplace.Dashboard.TotalVendors")</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <span class="small-box-footer">@Model.ActiveVendors @T("Plugins.Integration.TrendyolMarketplace.Dashboard.Active")</span>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                    <div class="inner">
+                        <h3>@Model.TotalCategories</h3>
+                        <p>@T("Plugins.Integration.TrendyolMarketplace.Dashboard.TrendyolCategories")</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-sitemap"></i>
+                    </div>
+                    <span class="small-box-footer">@Model.MappedCategories @T("Plugins.Integration.TrendyolMarketplace.Dashboard.Mapped") / @Model.UnmappedCategories @T("Plugins.Integration.TrendyolMarketplace.Dashboard.Unmapped")</span>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner">
+                        <h3>@Model.TotalBrands</h3>
+                        <p>@T("Plugins.Integration.TrendyolMarketplace.Dashboard.TrendyolBrands")</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <span class="small-box-footer">@Model.MappedBrands @T("Plugins.Integration.TrendyolMarketplace.Dashboard.Mapped") / @Model.UnmappedBrands @T("Plugins.Integration.TrendyolMarketplace.Dashboard.Unmapped")</span>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-primary">
+                    <div class="inner">
+                        <h3>@Model.TotalProducts</h3>
+                        <p>@T("Plugins.Integration.TrendyolMarketplace.Dashboard.TotalProducts")</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <span class="small-box-footer">@Model.TotalImportedProducts @T("Plugins.Integration.TrendyolMarketplace.Dashboard.Imported")</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Quick Actions -->
+            <div class="col-md-6">
+                <div class="card card-default">
+                    <div class="card-header">
+                        <h5><i class="fas fa-bolt"></i> @T("Plugins.Integration.TrendyolMarketplace.Dashboard.QuickActions")</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="btn-group-vertical w-100">
+                            <button type="button" class="btn btn-outline-primary btn-block text-left" id="btnSyncCategories">
+                                <i class="fas fa-sync-alt"></i> @T("Plugins.Integration.TrendyolMarketplace.Button.SyncCategories")
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-block text-left" id="btnSyncBrands">
+                                <i class="fas fa-sync-alt"></i> @T("Plugins.Integration.TrendyolMarketplace.Button.SyncBrands")
+                            </button>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                @T("Plugins.Integration.TrendyolMarketplace.Dashboard.LastCategorySync"): @(Model.LastCategorySyncOnDisplay ?? T("Plugins.Integration.TrendyolMarketplace.Dashboard.Never").Text)<br/>
+                                @T("Plugins.Integration.TrendyolMarketplace.Dashboard.LastBrandSync"): @(Model.LastBrandSyncOnDisplay ?? T("Plugins.Integration.TrendyolMarketplace.Dashboard.Never").Text)
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vendor Summary -->
+            <div class="col-md-6">
+                <div class="card card-default">
+                    <div class="card-header">
+                        <h5><i class="fas fa-users"></i> @T("Plugins.Integration.TrendyolMarketplace.Dashboard.VendorSummary")</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>@T("Plugins.Integration.TrendyolMarketplace.Dashboard.Vendor")</th>
+                                    <th>@T("Plugins.Integration.TrendyolMarketplace.Dashboard.Status")</th>
+                                    <th>@T("Plugins.Integration.TrendyolMarketplace.Dashboard.Products")</th>
+                                    <th>@T("Plugins.Integration.TrendyolMarketplace.Dashboard.LastSync")</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var vendor in Model.VendorSummaries)
+                                {
+                                    <tr>
+                                        <td>@vendor.VendorName</td>
+                                        <td>
+                                            @if (vendor.IsActive)
+                                            {
+                                                <span class="badge bg-success">@T("Plugins.Integration.TrendyolMarketplace.Dashboard.Active")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">@T("Plugins.Integration.TrendyolMarketplace.Dashboard.Inactive")</span>
+                                            }
+                                        </td>
+                                        <td>@vendor.TotalProducts / @vendor.ImportedProducts</td>
+                                        <td>@vendor.LastSyncOnDisplay</td>
+                                    </tr>
+                                }
+                                @if (!Model.VendorSummaries.Any())
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">@T("Plugins.Integration.TrendyolMarketplace.Dashboard.NoVendorsConfigured")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Sync Logs -->
+        <div class="card card-default">
+            <div class="card-header">
+                <h5><i class="fas fa-history"></i> @T("Plugins.Integration.TrendyolMarketplace.Dashboard.RecentSyncLogs")</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>@T("Plugins.Integration.TrendyolMarketplace.SyncLogs.SyncType")</th>
+                            <th>@T("Plugins.Integration.TrendyolMarketplace.Dashboard.Vendor")</th>
+                            <th>@T("Plugins.Integration.TrendyolMarketplace.SyncLogs.StartedOnUtc")</th>
+                            <th>@T("Plugins.Integration.TrendyolMarketplace.Dashboard.Duration")</th>
+                            <th>@T("Plugins.Integration.TrendyolMarketplace.SyncLogs.SuccessCount")</th>
+                            <th>@T("Plugins.Integration.TrendyolMarketplace.SyncLogs.FailedCount")</th>
+                            <th>@T("Plugins.Integration.TrendyolMarketplace.SyncLogs.Status")</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var log in Model.RecentSyncLogs)
+                        {
+                            <tr>
+                                <td>@log.SyncTypeDisplay</td>
+                                <td>@log.VendorName</td>
+                                <td>@log.StartedOnDisplay</td>
+                                <td>@log.Duration</td>
+                                <td><span class="badge bg-success">@log.SuccessCount</span></td>
+                                <td><span class="badge bg-danger">@log.FailedCount</span></td>
+                                <td>
+                                    @switch (log.Status)
+                                    {
+                                        case SyncStatus.Running:
+                                            <span class="badge bg-info">@T("Plugins.Integration.TrendyolMarketplace.SyncLogs.Status.Running")</span>
+                                            break;
+                                        case SyncStatus.Completed:
+                                            <span class="badge bg-success">@T("Plugins.Integration.TrendyolMarketplace.SyncLogs.Status.Completed")</span>
+                                            break;
+                                        case SyncStatus.CompletedWithErrors:
+                                            <span class="badge bg-warning">@T("Plugins.Integration.TrendyolMarketplace.SyncLogs.Status.CompletedWithErrors")</span>
+                                            break;
+                                        case SyncStatus.Failed:
+                                            <span class="badge bg-danger">@T("Plugins.Integration.TrendyolMarketplace.SyncLogs.Status.Failed")</span>
+                                            break;
+                                        default:
+                                            <span class="badge bg-secondary">@log.StatusDisplay</span>
+                                            break;
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        @if (!Model.RecentSyncLogs.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">@T("Plugins.Integration.TrendyolMarketplace.Dashboard.NoSyncLogs")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script asp-location="Footer">
+    $(document).ready(function () {
+        var token = $('input[name="__RequestVerificationToken"]').val() ||
+                    $('meta[name="__RequestVerificationToken"]').attr('content');
+
+        $('#btnSyncCategories').click(function () {
+            var btn = $(this);
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> @T("Plugins.Integration.TrendyolMarketplace.Dashboard.Syncing")...');
+
+            $.ajax({
+                url: '@Url.Action("SyncCategories", "TrendyolAdmin")',
+                type: 'POST',
+                headers: { 'RequestVerificationToken': token },
+                data: { __RequestVerificationToken: token },
+                success: function (data) {
+                    if (data.success) {
+                        displayBarNotification(data.message, 0, 5000);
+                        setTimeout(function() { location.reload(); }, 2000);
+                    } else {
+                        displayBarNotification(data.message, 1, 0);
+                    }
+                },
+                error: function () {
+                    displayBarNotification('@T("Plugins.Integration.TrendyolMarketplace.Dashboard.ErrorOccurred")', 1, 0);
+                },
+                complete: function () {
+                    btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> @T("Plugins.Integration.TrendyolMarketplace.Button.SyncCategories")');
+                }
+            });
+        });
+
+        $('#btnSyncBrands').click(function () {
+            var btn = $(this);
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> @T("Plugins.Integration.TrendyolMarketplace.Dashboard.Syncing")...');
+
+            $.ajax({
+                url: '@Url.Action("SyncBrands", "TrendyolAdmin")',
+                type: 'POST',
+                headers: { 'RequestVerificationToken': token },
+                data: { __RequestVerificationToken: token },
+                success: function (data) {
+                    if (data.success) {
+                        displayBarNotification(data.message, 0, 5000);
+                        setTimeout(function() { location.reload(); }, 2000);
+                    } else {
+                        displayBarNotification(data.message, 1, 0);
+                    }
+                },
+                error: function () {
+                    displayBarNotification('@T("Plugins.Integration.TrendyolMarketplace.Dashboard.ErrorOccurred")', 1, 0);
+                },
+                complete: function () {
+                    btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> @T("Plugins.Integration.TrendyolMarketplace.Button.SyncBrands")');
+                }
+            });
+        });
+    });
+</script>

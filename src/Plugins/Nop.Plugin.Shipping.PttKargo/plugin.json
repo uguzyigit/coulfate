@@ -1,0 +1,12 @@
+{
+  "Group": "Marketplace",
+  "FriendlyName": "PTT Kargo",
+  "SystemName": "Shipping.PttKargo",
+  "Version": "1.0.0",
+  "SupportedVersions": ["4.90"],
+  "Author": "Coulfate",
+  "DisplayOrder": 1,
+  "FileName": "Nop.Plugin.Shipping.PttKargo.dll",
+  "Description": "PTT Kargo entegrasyonu - Pazaryeri ve Satıcı anlaşması desteği ile gönderi oluşturma ve takip",
+  "DependsOnSystemNames": ["Marketplace.Core", "Marketplace.ShippingManager"]
+}

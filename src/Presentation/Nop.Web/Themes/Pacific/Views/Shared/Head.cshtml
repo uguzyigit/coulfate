@@ -1,0 +1,40 @@
+@using Nop.Core.Domain.Catalog
+@using Nop.Services.Helpers
+
+@inject CatalogSettings catalogSettings
+@inject IThemeContext themeContext
+@inject IUserAgentHelper userAgentHelper
+
+@{
+    Layout = "";
+    var themeName = await themeContext.GetWorkingThemeNameAsync();
+    var supportRtl = await Html.ShouldUseRtlThemeAsync();
+}
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+@{
+    //add main CSS file
+    NopHtml.AppendCssFileParts($"~/Themes/{themeName}/Content/css/styles.css");
+
+    //add RTL CSS file if needed
+    if (supportRtl)
+    {
+        NopHtml.AppendCssFileParts($"~/Themes/{themeName}/Content/css/styles.rtl.css");
+    }
+
+    //add swiper css file
+    if (catalogSettings.DisplayAllPicturesOnCatalogPages)
+    {
+        NopHtml.AppendCssFileParts("~/lib_npm/swiper/swiper-bundle.min.css");
+    }
+
+    //add jQuery UI css file
+    NopHtml.AppendCssFileParts("~/lib_npm/jquery-ui-dist/jquery-ui.min.css");
+
+    //add Pacific theme JS
+    NopHtml.AppendScriptParts(ResourceLocation.Footer, $"~/Themes/{themeName}/Content/js/pacific.js");
+}

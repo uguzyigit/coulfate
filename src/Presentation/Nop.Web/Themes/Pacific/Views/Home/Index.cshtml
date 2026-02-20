@@ -1,0 +1,73 @@
+@using Nop.Services.Localization
+@using Nop.Core
+@inject ILocalizationService localizationService
+@inject IStoreContext storeContext
+
+@{
+    Layout = "_ColumnsOne";
+
+    var homepageTitle = await localizationService.GetLocalizedAsync(await storeContext.GetCurrentStoreAsync(), s => s.HomepageTitle);
+
+    //title
+    if (!string.IsNullOrEmpty(homepageTitle))
+    {
+        NopHtml.AddTitleParts(homepageTitle);
+    }
+
+    var homepageDescription = await localizationService.GetLocalizedAsync(await storeContext.GetCurrentStoreAsync(), s => s.HomepageDescription);
+
+    //meta
+    if (!string.IsNullOrEmpty(homepageDescription))
+    {
+        NopHtml.AddMetaDescriptionParts(homepageDescription);
+    }
+
+    //page class
+    NopHtml.AppendPageCssClassParts("html-home-page pacific-home-page");
+}
+
+<div class="page home-page pacific-home">
+    <div class="page-body">
+        <!-- Hero Slider / Top Widgets -->
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageTop })
+
+        <!-- Homepage Topic Text -->
+        @await Component.InvokeAsync(typeof(TopicBlockViewComponent), new { systemName = "HomepageText" })
+
+        <!-- Before Categories Widget Zone -->
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBeforeCategories })
+
+        <!-- Homepage Categories Grid -->
+        @await Component.InvokeAsync(typeof(HomepageCategoriesViewComponent))
+
+        <!-- Filter Level Search -->
+        @await Component.InvokeAsync(typeof(FilterLevelValueSearchViewComponent))
+
+        <!-- Before Products Widget Zone -->
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBeforeProducts })
+
+        <!-- Homepage Featured Products -->
+        @await Component.InvokeAsync(typeof(HomepageProductsViewComponent))
+
+        <!-- Before Best Sellers Widget Zone -->
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBeforeBestSellers })
+
+        <!-- Homepage Best Sellers -->
+        @await Component.InvokeAsync(typeof(HomepageBestSellersViewComponent))
+
+        <!-- Before News Widget Zone -->
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBeforeNews })
+
+        <!-- Homepage News/Blog -->
+        @await Component.InvokeAsync(typeof(HomepageNewsViewComponent))
+
+        <!-- Before Poll Widget Zone -->
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBeforePoll })
+
+        <!-- Homepage Polls -->
+        @await Component.InvokeAsync(typeof(HomepagePollsViewComponent))
+
+        <!-- Bottom Widget Zone -->
+        @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.HomepageBottom })
+    </div>
+</div>

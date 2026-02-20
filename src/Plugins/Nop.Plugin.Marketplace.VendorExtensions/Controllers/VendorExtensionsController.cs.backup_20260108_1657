@@ -1,0 +1,228 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Nop.Core;
+using Nop.Plugin.Marketplace.VendorExtensions.Models;
+using Nop.Plugin.Marketplace.VendorExtensions.Services;
+using Nop.Services.Configuration;
+using Nop.Services.Localization;
+using Nop.Services.Messages;
+using Nop.Services.Security;
+using Nop.Services.Vendors;
+using Nop.Web.Framework;
+using Nop.Web.Framework.Controllers;
+using Nop.Web.Framework.Mvc.Filters;
+using Nop.Web.Framework.UI;
+
+namespace Nop.Plugin.Marketplace.VendorExtensions.Controllers;
+
+[Area(AreaNames.ADMIN)]
+[AuthorizeAdmin]
+[AutoValidateAntiforgeryToken]
+public class VendorExtensionsController : BasePluginController
+{
+    private readonly ISettingService _settingService;
+    private readonly ILocalizationService _localizationService;
+    private readonly INotificationService _notificationService;
+    private readonly IPermissionService _permissionService;
+    private readonly IVendorService _vendorService;
+    private readonly IVendorAccountService _vendorAccountService;
+    private readonly INopHtmlHelper _nopHtmlHelper;
+    private readonly IWorkContext _workContext;
+
+    public VendorExtensionsController(
+        ISettingService settingService,
+        ILocalizationService localizationService,
+        INotificationService notificationService,
+        IPermissionService permissionService,
+        IVendorService vendorService,
+        IVendorAccountService vendorAccountService,
+        INopHtmlHelper nopHtmlHelper,
+        IWorkContext workContext)
+    {
+        _settingService = settingService;
+        _localizationService = localizationService;
+        _notificationService = notificationService;
+        _permissionService = permissionService;
+        _vendorService = vendorService;
+        _vendorAccountService = vendorAccountService;
+        _nopHtmlHelper = nopHtmlHelper;
+        _workContext = workContext;
+    }
+
+    #region Vendor Access Control Helpers
+
+    /// <summary>
+    /// Check if current user is a vendor
+    /// </summary>
+    private async Task<bool> IsVendorAsync()
+    {
+        var vendor = await _workContext.GetCurrentVendorAsync();
+        return vendor != null;
+    }
+
+    /// <summary>
+    /// Checks vendor access and returns AccessDenied view if user is a vendor
+    /// </summary>
+    private async Task<IActionResult> CheckVendorAccessAsync()
+    {
+        if (await IsVendorAsync())
+            return AccessDeniedView();
+        return null;
+    }
+
+    #endregion
+
+    #region Configure
+
+    public async Task<IActionResult> Configure()
+    {
+        // Vendor access check
+        var vendorCheck = await CheckVendorAccessAsync();
+        if (vendorCheck != null) return vendorCheck;
+
+        _nopHtmlHelper.SetActiveMenuItemSystemName("Marketplace.VendorExtensions.Settings");
+
+        var model = new ConfigurationModel
+        {
+            // Add configuration properties as needed
+        };
+
+        return View("~/Plugins/Marketplace.VendorExtensions/Views/Configure.cshtml", model);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Configure(ConfigurationModel model)
+    {
+        // Vendor access check
+        var vendorCheck = await CheckVendorAccessAsync();
+        if (vendorCheck != null) return vendorCheck;
+
+        if (!ModelState.IsValid)
+            return await Configure();
+
+        // Save settings here if needed
+
+        _notificationService.SuccessNotification(
+            await _localizationService.GetResourceAsync("Admin.Plugins.Saved"));
+
+        return await Configure();
+    }
+
+    #endregion
+
+    #region Transaction History
+
+    public async Task<IActionResult> TransactionHistory()
+    {
+        // Vendor access check
+        var vendorCheck = await CheckVendorAccessAsync();
+        if (vendorCheck != null) return vendorCheck;
+
+        _nopHtmlHelper.SetActiveMenuItemSystemName("Marketplace.VendorExtensions.Transactions");
+
+        var vendors = await _vendorService.GetAllVendorsAsync(showHidden: false);
+        var model = new VendorTransactionHistoryModel
+        {
+            AvailableVendors = vendors.Select(v => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+            {
+                Text = v.Name,
+                Value = v.Id.ToString()
+            }).ToList()
+        };
+
+        model.AvailableVendors.Insert(0, new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+        {
+            Text = await _localizationService.GetResourceAsync("Admin.Common.All"),
+            Value = "0"
+        });
+
+        return View("~/Plugins/Marketplace.VendorExtensions/Views/TransactionHistory.cshtml", model);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> GetTransactionList(int vendorId, DateTime? startDate, DateTime? endDate, int? transactionType)
+    {
+        // Vendor access check
+        var vendorCheck = await CheckVendorAccessAsync();
+        if (vendorCheck != null) return vendorCheck;
+
+        try
+        {
+            // Get account summary if vendor is selected
+            object accountSummary = null;
+            if (vendorId > 0)
+            {
+                var account = await _vendorAccountService.GetOrCreateCurrentAccountAsync(vendorId);
+                accountSummary = new
+                {
+                    balance = account.Balance,
+                    totalCredit = account.TotalCredit,
+                    totalDebit = account.TotalDebit,
+                    lastUpdated = account.LastUpdatedUtc
+                };
+            }
+
+            // Get transactions
+            var transactions = await _vendorAccountService.GetTransactionsAsync(
+                vendorId: vendorId > 0 ? vendorId : null,
+                startDate: startDate,
+                endDate: endDate,
+                type: transactionType);
+
+            var transactionModels = transactions.Select(t => new TransactionItemModel
+            {
+                Id = t.Id,
+                VendorId = t.VendorId,
+                OrderId = t.OrderId,
+                Type = t.Type,
+                TypeName = GetTransactionTypeName(t.Type),
+                Amount = t.Amount,
+                BalanceAfter = t.BalanceAfter,
+                Description = t.Description,
+                ReferenceNumber = t.ReferenceNumber,
+                CreatedOnUtc = t.CreatedOnUtc
+            }).ToList();
+
+            return Json(new
+            {
+                success = true,
+                accountSummary = accountSummary,
+                transactions = transactionModels
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, error = ex.Message });
+        }
+    }
+
+    #endregion
+
+    #region Helpers
+
+    private string GetTransactionTypeName(int type)
+    {
+        return type switch
+        {
+            1 => "Order Revenue",
+            2 => "Commission",
+            3 => "Marketplace Fee",
+            4 => "Tax Withholding",
+            5 => "Shipping Cost",
+            6 => "Refund",
+            7 => "Payout",
+            8 => "Manual Adjustment",
+            9 => "Penalty",
+            10 => "Bonus",
+            11 => "Chargeback",
+            12 => "Debt Collection",
+            13 => "Interest",
+            _ => "Unknown"
+        };
+    }
+
+    #endregion
+}

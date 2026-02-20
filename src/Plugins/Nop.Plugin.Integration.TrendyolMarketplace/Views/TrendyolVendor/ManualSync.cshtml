@@ -1,0 +1,228 @@
+@model ManualSyncModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Integration.TrendyolMarketplace.Menu.Vendor.ManualSync").Text;
+    NopHtml.SetActiveMenuItemSystemName("VendorPanel.Trendyol.ManualSync");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("Plugins.Integration.TrendyolMarketplace.Menu.Vendor.ManualSync")
+    </h1>
+</div>
+
+<form asp-controller="TrendyolVendor" asp-action="ManualSync" method="post" id="manualsync-form">
+</form>
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Product Sync -->
+            <div class="col-md-6">
+                <div class="card card-default">
+                    <div class="card-header">
+                        <h5><i class="fas fa-box"></i> @T("Plugins.Integration.TrendyolMarketplace.ManualSync.ProductSync")</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.ProductSync.Description")</p>
+
+                        @if (Model.IsProductSyncRunning)
+                        {
+                            <div class="alert alert-info">
+                                <i class="fas fa-spinner fa-spin"></i> @T("Plugins.Integration.TrendyolMarketplace.ManualSync.ProductSync.Running")
+                            </div>
+                        }
+
+                        @if (Model.LastProductSync != null)
+                        {
+                            <div class="callout @(Model.LastProductSync.Status == SyncStatus.Completed ? "callout-success" : Model.LastProductSync.Status == SyncStatus.Failed ? "callout-danger" : "callout-warning")">
+                                <h6>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.LastProductSync")</h6>
+                                <p>
+                                    <strong>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.Started"):</strong> @Model.LastProductSync.StartedOnDisplay<br />
+                                    <strong>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.Status"):</strong> @Model.LastProductSync.StatusDisplay<br />
+                                    <strong>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.Success"):</strong> @Model.LastProductSync.SuccessCount |
+                                    <strong>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.Failed"):</strong> @Model.LastProductSync.FailedCount |
+                                    <strong>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.Skipped"):</strong> @Model.LastProductSync.SkippedCount
+                                </p>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-footer">
+                        <button type="button" class="btn btn-primary btn-lg btn-block" id="btnProductSync" @(!Model.CanStartProductSync ? "disabled" : "")>
+                            <i class="fas fa-sync-alt"></i>
+                            @T("Plugins.Integration.TrendyolMarketplace.Button.StartProductSync")
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock/Price Sync -->
+            <div class="col-md-6">
+                <div class="card card-default">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-line"></i> @T("Plugins.Integration.TrendyolMarketplace.ManualSync.StockPriceSync")</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.StockPriceSync.Description")</p>
+
+                        @if (Model.IsStockSyncRunning || Model.IsPriceSyncRunning)
+                        {
+                            <div class="alert alert-info">
+                                <i class="fas fa-spinner fa-spin"></i> @T("Plugins.Integration.TrendyolMarketplace.ManualSync.StockPriceSync.Running")
+                            </div>
+                        }
+
+                        @if (Model.LastStockSync != null)
+                        {
+                            <div class="callout @(Model.LastStockSync.Status == SyncStatus.Completed ? "callout-success" : Model.LastStockSync.Status == SyncStatus.Failed ? "callout-danger" : "callout-warning")">
+                                <h6>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.LastStockSync")</h6>
+                                <p>
+                                    <strong>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.Started"):</strong> @Model.LastStockSync.StartedOnDisplay<br />
+                                    <strong>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.Status"):</strong> @Model.LastStockSync.StatusDisplay<br />
+                                    <strong>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.Success"):</strong> @Model.LastStockSync.SuccessCount |
+                                    <strong>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.Failed"):</strong> @Model.LastStockSync.FailedCount
+                                </p>
+                            </div>
+                        }
+
+                        @if (Model.LastPriceSync != null)
+                        {
+                            <div class="callout @(Model.LastPriceSync.Status == SyncStatus.Completed ? "callout-success" : Model.LastPriceSync.Status == SyncStatus.Failed ? "callout-danger" : "callout-warning")">
+                                <h6>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.LastPriceSync")</h6>
+                                <p>
+                                    <strong>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.Started"):</strong> @Model.LastPriceSync.StartedOnDisplay<br />
+                                    <strong>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.Status"):</strong> @Model.LastPriceSync.StatusDisplay<br />
+                                    <strong>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.Success"):</strong> @Model.LastPriceSync.SuccessCount |
+                                    <strong>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.Failed"):</strong> @Model.LastPriceSync.FailedCount
+                                </p>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-footer">
+                        <button type="button" class="btn btn-primary btn-lg btn-block" id="btnStockPriceSync" @(!Model.CanStartStockPriceSync ? "disabled" : "")>
+                            <i class="fas fa-sync-alt"></i>
+                            @T("Plugins.Integration.TrendyolMarketplace.Button.StartStockPriceSync")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug API -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-warning collapsed-card">
+                    <div class="card-header" data-card-widget="collapse" style="cursor:pointer">
+                        <h5><i class="fas fa-bug"></i> @T("Plugins.Integration.TrendyolMarketplace.ManualSync.ApiDebug")</h5>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.ApiDebug.Description")</p>
+                        <button type="button" class="btn btn-warning" id="btnDebugApi">
+                            <i class="fas fa-bug"></i> @T("Plugins.Integration.TrendyolMarketplace.ManualSync.ApiDebug.TestButton")
+                        </button>
+                        <div id="debugResults" class="mt-3" style="display:none">
+                            <pre id="debugOutput" style="max-height:500px; overflow-y:auto; background:#1e1e1e; color:#d4d4d4; padding:15px; border-radius:4px; font-size:12px;"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Box -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="callout callout-info">
+                    <h5><i class="fas fa-info-circle"></i> @T("Plugins.Integration.TrendyolMarketplace.ManualSync.SyncInfo")</h5>
+                    <ul>
+                        <li><strong>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.ProductSync"):</strong> @T("Plugins.Integration.TrendyolMarketplace.ManualSync.SyncInfo.ProductSync")</li>
+                        <li><strong>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.StockPriceSync"):</strong> @T("Plugins.Integration.TrendyolMarketplace.ManualSync.SyncInfo.StockPriceSync")</li>
+                        <li>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.SyncInfo.AutoSync")</li>
+                        <li>@T("Plugins.Integration.TrendyolMarketplace.ManualSync.SyncInfo.ManualSync")</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script asp-location="Footer">
+    $(document).ready(function () {
+        var token = $('input[name="__RequestVerificationToken"]').val() ||
+                    $('meta[name="__RequestVerificationToken"]').attr('content');
+
+        $('#btnProductSync').click(function () {
+            var btn = $(this);
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> @T("Plugins.Integration.TrendyolMarketplace.ManualSync.StartingSync")');
+
+            $.ajax({
+                url: '@Url.Action("StartProductSync", "TrendyolVendor")',
+                type: 'POST',
+                headers: { 'RequestVerificationToken': token },
+                data: { __RequestVerificationToken: token },
+                success: function (data) {
+                    if (data.success) {
+                        displayBarNotification(data.message, 0, 5000);
+                        setTimeout(function() { location.reload(); }, 3000);
+                    } else {
+                        displayBarNotification(data.message, 1, 0);
+                        btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> @T("Plugins.Integration.TrendyolMarketplace.Button.StartProductSync")');
+                    }
+                },
+                error: function() {
+                    displayBarNotification('@T("Plugins.Integration.TrendyolMarketplace.Common.Error")', 1, 0);
+                    btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> @T("Plugins.Integration.TrendyolMarketplace.Button.StartProductSync")');
+                }
+            });
+        });
+
+        $('#btnDebugApi').click(function () {
+            var btn = $(this);
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> @T("Plugins.Integration.TrendyolMarketplace.ManualSync.QueryingApi")');
+            $('#debugResults').show();
+            $('#debugOutput').text('@T("Plugins.Integration.TrendyolMarketplace.Common.Loading")');
+
+            $.ajax({
+                url: '@Url.Action("DebugApiProducts", "TrendyolVendor")',
+                type: 'POST',
+                headers: { 'RequestVerificationToken': token },
+                data: { __RequestVerificationToken: token },
+                success: function (data) {
+                    $('#debugOutput').text(JSON.stringify(data, null, 2));
+                    btn.prop('disabled', false).html('<i class="fas fa-bug"></i> @T("Plugins.Integration.TrendyolMarketplace.ManualSync.ApiDebug.TestButton")');
+                },
+                error: function(xhr) {
+                    $('#debugOutput').text('Error: ' + xhr.status + ' ' + xhr.statusText + '\n' + xhr.responseText);
+                    btn.prop('disabled', false).html('<i class="fas fa-bug"></i> @T("Plugins.Integration.TrendyolMarketplace.ManualSync.ApiDebug.TestButton")');
+                }
+            });
+        });
+
+        $('#btnStockPriceSync').click(function () {
+            var btn = $(this);
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> @T("Plugins.Integration.TrendyolMarketplace.ManualSync.StartingSync")');
+
+            $.ajax({
+                url: '@Url.Action("StartStockPriceSync", "TrendyolVendor")',
+                type: 'POST',
+                headers: { 'RequestVerificationToken': token },
+                data: { __RequestVerificationToken: token },
+                success: function (data) {
+                    if (data.success) {
+                        displayBarNotification(data.message, 0, 5000);
+                        setTimeout(function() { location.reload(); }, 3000);
+                    } else {
+                        displayBarNotification(data.message, 1, 0);
+                        btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> @T("Plugins.Integration.TrendyolMarketplace.Button.StartStockPriceSync")');
+                    }
+                },
+                error: function() {
+                    displayBarNotification('@T("Plugins.Integration.TrendyolMarketplace.Common.Error")', 1, 0);
+                    btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> @T("Plugins.Integration.TrendyolMarketplace.Button.StartStockPriceSync")');
+                }
+            });
+        });
+    });
+</script>

@@ -1,0 +1,149 @@
+@model SyncLogSearchModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Integration.TrendyolMarketplace.SyncLogs.Title").Text;
+    NopHtml.SetActiveMenuItemSystemName("VendorPanel.Trendyol.SyncLogs");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        @T("Plugins.Integration.TrendyolMarketplace.SyncLogs.Title")
+    </h1>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-default card-search">
+            <div class="card-body">
+                <div class="row align-items-end">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>@T("Plugins.Integration.TrendyolMarketplace.SyncLogs.SyncType")</label>
+                            <select id="SyncType" class="form-control">
+                                <option value="">@T("Plugins.Integration.TrendyolMarketplace.Common.All")</option>
+                                <option value="1">@T("Plugins.Integration.TrendyolMarketplace.SyncType.Product")</option>
+                                <option value="2">@T("Plugins.Integration.TrendyolMarketplace.SyncType.Stock")</option>
+                                <option value="3">@T("Plugins.Integration.TrendyolMarketplace.SyncType.Price")</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>@T("Plugins.Integration.TrendyolMarketplace.SyncLogs.Status")</label>
+                            <select id="Status" class="form-control">
+                                <option value="">@T("Plugins.Integration.TrendyolMarketplace.Common.All")</option>
+                                <option value="0">@T("Plugins.Integration.TrendyolMarketplace.SyncStatus.Running")</option>
+                                <option value="1">@T("Plugins.Integration.TrendyolMarketplace.SyncStatus.Completed")</option>
+                                <option value="2">@T("Plugins.Integration.TrendyolMarketplace.SyncStatus.CompletedWithErrors")</option>
+                                <option value="3">@T("Plugins.Integration.TrendyolMarketplace.SyncStatus.Failed")</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div>
+                                <button type="button" class="btn btn-primary btn-block" id="btnSearch">
+                                    <i class="fas fa-search"></i>
+                                    @T("Plugins.Integration.TrendyolMarketplace.Common.Search")
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-default">
+            <div class="card-body">
+                <input type="hidden" id="VendorId" value="@Model.VendorId" />
+
+                @await Html.PartialAsync("Table", new DataTablesModel
+                {
+                    Name = "synclogs-grid",
+                    UrlRead = new DataUrl("SyncLogList", "TrendyolVendor", null),
+                    SearchButtonId = "btnSearch",
+                    Filters = new List<FilterParameter>
+                    {
+                        new FilterParameter(nameof(Model.VendorId)),
+                        new FilterParameter(nameof(Model.SyncType)),
+                        new FilterParameter(nameof(Model.Status))
+                    },
+                    Length = Model.PageSize,
+                    LengthMenu = Model.AvailablePageSizes,
+                    ColumnCollection = new List<ColumnProperty>
+                    {
+                        new ColumnProperty(nameof(SyncLogModel.SyncTypeDisplay))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.SyncLogs.SyncType").Text,
+                            Width = "100"
+                        },
+                        new ColumnProperty(nameof(SyncLogModel.StartedOnDisplay))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.SyncLogs.StartedOnUtc").Text,
+                            Width = "150"
+                        },
+                        new ColumnProperty(nameof(SyncLogModel.Duration))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.SyncLogs.Duration").Text,
+                            Width = "80"
+                        },
+                        new ColumnProperty(nameof(SyncLogModel.TotalItems))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.SyncLogs.TotalItems").Text,
+                            Width = "80",
+                            ClassName = NopColumnClassDefaults.CenterAll
+                        },
+                        new ColumnProperty(nameof(SyncLogModel.SuccessCount))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.SyncLogs.SuccessCount").Text,
+                            Width = "80",
+                            ClassName = NopColumnClassDefaults.CenterAll,
+                            Render = new RenderCustom("renderSuccess")
+                        },
+                        new ColumnProperty(nameof(SyncLogModel.FailedCount))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.SyncLogs.FailedCount").Text,
+                            Width = "80",
+                            ClassName = NopColumnClassDefaults.CenterAll,
+                            Render = new RenderCustom("renderFailed")
+                        },
+                        new ColumnProperty(nameof(SyncLogModel.StatusDisplay))
+                        {
+                            Title = T("Plugins.Integration.TrendyolMarketplace.SyncLogs.Status").Text,
+                            Width = "120",
+                            Render = new RenderCustom("renderStatus")
+                        }
+                    }
+                })
+            </div>
+        </div>
+    </div>
+</section>
+
+<script asp-location="Footer">
+    function renderSuccess(data, type, row) {
+        return '<span class="badge bg-success">' + row.SuccessCount + '</span>';
+    }
+
+    function renderFailed(data, type, row) {
+        var badge = row.FailedCount > 0 ? 'bg-danger' : 'bg-secondary';
+        return '<span class="badge ' + badge + '">' + row.FailedCount + '</span>';
+    }
+
+    function renderStatus(data, type, row) {
+        switch(row.Status) {
+            case 0:
+                return '<span class="badge bg-info">@T("Plugins.Integration.TrendyolMarketplace.SyncStatus.Running")</span>';
+            case 1:
+                return '<span class="badge bg-success">@T("Plugins.Integration.TrendyolMarketplace.SyncStatus.Completed")</span>';
+            case 2:
+                return '<span class="badge bg-warning">@T("Plugins.Integration.TrendyolMarketplace.SyncStatus.WithErrors")</span>';
+            case 3:
+                return '<span class="badge bg-danger" title="' + (row.ErrorMessage || '') + '">@T("Plugins.Integration.TrendyolMarketplace.SyncStatus.Failed")</span>';
+            default:
+                return '<span class="badge bg-secondary">' + data + '</span>';
+        }
+    }
+</script>

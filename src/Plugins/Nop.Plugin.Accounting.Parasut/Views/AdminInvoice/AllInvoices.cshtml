@@ -1,0 +1,164 @@
+@model AdminInvoiceListModel
+@{
+    Layout = "_AdminLayout";
+    NopHtml.SetActiveMenuItemSystemName("Marketplace.Finance.VendorInvoices");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        <i class="fas fa-file-invoice-dollar"></i> Satıcı Faturaları (Tümü)
+    </h1>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <!-- Filtreler -->
+        <div class="card card-default">
+            <div class="card-header">
+                <div class="card-title"><i class="fas fa-filter"></i> Filtreler</div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Satıcı</label>
+                            <select id="filterVendor" class="form-control">
+                                @foreach (var vendor in Model.AvailableVendors)
+                                {
+                                    <option value="@vendor.Value">@vendor.Text</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>Başlangıç Tarihi</label>
+                            <input type="date" id="filterStartDate" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>Bitiş Tarihi</label>
+                            <input type="date" id="filterEndDate" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>Durum</label>
+                            <select id="filterStatus" class="form-control">
+                                <option value="">Tümü</option>
+                                <option value="1">Oluşturuldu</option>
+                                <option value="2">İşleniyor</option>
+                                <option value="3">Hazır</option>
+                                <option value="4">Hata</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <button type="button" id="btnFilter" class="btn btn-primary btn-block">
+                                <i class="fas fa-search"></i> Filtrele
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Faturalar Tablosu -->
+        <div class="card card-default">
+            <div class="card-body">
+                <div id="loadingIndicator" class="text-center" style="display:none;">
+                    <i class="fas fa-spinner fa-spin fa-3x"></i>
+                    <p>Yükleniyor...</p>
+                </div>
+                
+                <div class="table-responsive" id="invoicesTable" style="display:none;">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fatura No</th>
+                                <th>Satıcı</th>
+                                <th>Sipariş</th>
+                                <th>Tür</th>
+                                <th class="text-right">Brüt</th>
+                                <th class="text-right">KDV</th>
+                                <th class="text-right">Net</th>
+                                <th>Durum</th>
+                                <th>Tarih</th>
+                                <th>İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoiceTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="noDataMessage" class="alert alert-info" style="display:none;">
+                    <i class="fas fa-info-circle"></i> Kayıt bulunamadı.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    $(document).ready(function() {
+        // İlk yükleme
+        loadInvoices();
+
+        // Filtrele butonu
+        $('#btnFilter').click(function() {
+            loadInvoices();
+        });
+
+        function loadInvoices() {
+            $('#loadingIndicator').show();
+            $('#invoicesTable').hide();
+            $('#noDataMessage').hide();
+
+            var data = {
+                vendorId: $('#filterVendor').val(),
+                startDate: $('#filterStartDate').val(),
+                endDate: $('#filterEndDate').val(),
+                status: $('#filterStatus').val()
+            };
+
+            $.post('@Url.Action("GetInvoiceList", "AdminInvoice", new { area = "Admin" })', data, function(response) {
+                $('#loadingIndicator').hide();
+
+                if (response.success && response.data.length > 0) {
+                    var tbody = $('#invoiceTableBody');
+                    tbody.empty();
+
+                    $.each(response.data, function(index, invoice) {
+                        var row = '<tr>' +
+                            '<td>' + invoice.invoiceNo + '</td>' +
+                            '<td>' + invoice.vendorName + '</td>' +
+                            '<td><a href="/Admin/Order/Edit/' + invoice.orderId + '">#' + invoice.orderId + '</a></td>' +
+                            '<td>' + invoice.invoiceType + '</td>' +
+                            '<td class="text-right">' + invoice.grossAmount.toFixed(2) + ' ₺</td>' +
+                            '<td class="text-right">' + invoice.vatAmount.toFixed(2) + ' ₺</td>' +
+                            '<td class="text-right">' + invoice.netAmount.toFixed(2) + ' ₺</td>' +
+                            '<td><span class="badge ' + invoice.statusClass + '">' + invoice.statusText + '</span></td>' +
+                            '<td>' + invoice.createdOn + '</td>' +
+                            '<td>';
+                        
+                        if (invoice.hasPdf) {
+                            row += '<a href="@Url.Action("DownloadPdf", "VendorInvoice", new { area = "Admin" })?id=' + invoice.id + '" class="btn btn-sm btn-success" target="_blank">' +
+                                   '<i class="fas fa-download"></i></a>';
+                        }
+                        
+                        row += '</td></tr>';
+                        tbody.append(row);
+                    });
+
+                    $('#invoicesTable').show();
+                } else {
+                    $('#noDataMessage').show();
+                }
+            });
+        }
+    });
+</script>

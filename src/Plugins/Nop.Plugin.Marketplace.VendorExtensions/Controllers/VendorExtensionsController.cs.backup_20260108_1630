@@ -1,0 +1,332 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Nop.Core;
+using Nop.Services.Configuration;
+using Nop.Services.Localization;
+using Nop.Services.Messages;
+using Nop.Services.Vendors;
+using Nop.Web.Framework;
+using Nop.Web.Framework.Controllers;
+using Nop.Web.Framework.Mvc.Filters;
+using Nop.Web.Framework.UI;
+using Nop.Plugin.Marketplace.VendorExtensions.Services;
+using Nop.Plugin.Marketplace.VendorExtensions.Models;
+using Nop.Data;
+
+namespace Nop.Plugin.Marketplace.VendorExtensions.Controllers;
+
+[Area(AreaNames.ADMIN)]
+[AuthorizeAdmin]
+[AutoValidateAntiforgeryToken]
+public class VendorExtensionsController : BasePluginController
+{
+    private readonly ISettingService _settingService;
+    private readonly ILocalizationService _localizationService;
+    private readonly INotificationService _notificationService;
+    private readonly IWorkContext _workContext;
+    private readonly IVendorAccountService _vendorAccountService;
+    private readonly IVendorService _vendorService;
+    private readonly INopDataProvider _dataProvider;
+    private readonly INopHtmlHelper _nopHtmlHelper;
+
+    public VendorExtensionsController(
+        ISettingService settingService,
+        ILocalizationService localizationService,
+        INotificationService notificationService,
+        IWorkContext workContext,
+        IVendorAccountService vendorAccountService,
+        IVendorService vendorService,
+        INopDataProvider dataProvider,
+        INopHtmlHelper nopHtmlHelper)
+    {
+        _settingService = settingService;
+        _localizationService = localizationService;
+        _notificationService = notificationService;
+        _workContext = workContext;
+        _vendorAccountService = vendorAccountService;
+        _vendorService = vendorService;
+        _dataProvider = dataProvider;
+        _nopHtmlHelper = nopHtmlHelper;
+    }
+
+    public async Task<IActionResult> Configure()
+    {
+        _nopHtmlHelper.SetActiveMenuItemSystemName("Marketplace.VendorAccount.Settings");
+        return View("~/Plugins/Marketplace.VendorExtensions/Views/Configure.cshtml");
+    }
+
+    public async Task<IActionResult> TransactionHistory()
+    {
+        _nopHtmlHelper.SetActiveMenuItemSystemName("Marketplace.VendorAccount.AllTransactions");
+        
+        // Load all vendors for admin dropdown
+        var vendors = await _vendorService.GetAllVendorsAsync();
+        // Load all vendors for admin dropdown
+        ViewBag.Vendors = vendors.Select(v => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+        {
+            Value = v.Id.ToString(),
+            Text = v.Name
+        }).ToList();
+        
+        return View("~/Plugins/Marketplace.VendorExtensions/Views/TransactionHistory.cshtml");
+    }
+
+    [HttpPost]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> GetTransactionList(
+        int vendorId,
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        int? transactionType = null)
+    {
+        try
+        {
+            // Get current account
+            var account = await _vendorAccountService.GetOrCreateCurrentAccountAsync(vendorId);
+            
+            // Build WHERE clause
+            var whereClause = $"WHERE VendorId = {vendorId}";
+            if (startDate.HasValue)
+                whereClause += $" AND CreatedOnUtc >= '{startDate.Value:yyyy-MM-dd 00:00:00}'";
+            if (endDate.HasValue)
+                whereClause += $" AND CreatedOnUtc <= '{endDate.Value:yyyy-MM-dd 23:59:59}'";
+            if (transactionType.HasValue && transactionType.Value > 0)
+                whereClause += $" AND Type = {transactionType.Value}";
+            
+            var sql = $@"SELECT 
+                Id, VendorId, OrderId, Type, Amount, BalanceAfter, 
+                Description, ReferenceNumber, CreatedOnUtc
+                FROM `MarketplaceVendorTransaction`
+                {whereClause}
+                ORDER BY CreatedOnUtc DESC
+                LIMIT 100";
+            
+            var transactions = await _dataProvider.QueryAsync<VendorTransactionData>(sql);
+            
+            return Json(new
+            {
+                success = true,
+                account = new
+                {
+                    balance = account.Balance,
+                    totalCredit = account.TotalCredit,
+                    totalDebit = account.TotalDebit,
+                    lastUpdated = account.LastUpdatedUtc
+                },
+                transactions = transactions.Select(t => new
+                {
+                    id = t.Id,
+                    orderId = t.OrderId,
+                    type = t.Type,
+                    typeName = GetTransactionTypeName(t.Type),
+                    amount = t.Amount,
+                    balanceAfter = t.BalanceAfter,
+                    description = t.Description ?? "",
+                    referenceNumber = t.ReferenceNumber ?? "",
+                    createdOnUtc = t.CreatedOnUtc,
+                    createdOnStr = t.CreatedOnUtc.ToString("dd.MM.yyyy HH:mm")
+                })
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, error = ex.Message });
+        }
+    }
+
+    private string GetTransactionTypeName(int type)
+    {
+        return type switch
+        {
+            1 => "Order Revenue",
+            2 => "Commission",
+            3 => "Marketplace Fee",
+            4 => "Tax Withholding",
+            5 => "Shipping Cost",
+            6 => "Return Shipping",
+            7 => "Late Penalty",
+            8 => "Cancellation Penalty",
+            9 => "Manual Adjustment",
+            10 => "Refund",
+            11 => "Payment Received",
+            12 => "Vendor Discount",
+            13 => "Platform Discount",
+            _ => "Unknown"
+        };
+    }
+
+    public class VendorTransactionData
+    {
+        public int Id { get; set; }
+        public int VendorId { get; set; }
+        public int? OrderId { get; set; }
+        public int Type { get; set; }
+        public decimal Amount { get; set; }
+        public decimal BalanceAfter { get; set; }
+        public string? Description { get; set; }
+        public string? ReferenceNumber { get; set; }
+        public DateTime CreatedOnUtc { get; set; }
+    }
+
+    // Vendor's own commission report
+    public async Task<IActionResult> MyCommissionReport()
+    {
+        var vendor = await _workContext.GetCurrentVendorAsync();
+        if (vendor == null)
+            return Challenge();
+
+        // ✅ Aktif menüyü işaretle
+        ViewData["ActiveMenuItemSystemName"] = "Finance.MyCommissionReport";
+
+        return View("~/Plugins/Marketplace.VendorExtensions/Views/MyCommissionReport.cshtml");
+    }
+
+    [HttpPost]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> GetMyCommissionReport(DateTime? startDate = null, DateTime? endDate = null)
+    {
+        var vendor = await _workContext.GetCurrentVendorAsync();
+        if (vendor == null)
+            return Json(new { error = "Unauthorized" });
+
+        try
+        {
+            // Default to last 30 days
+            if (!startDate.HasValue)
+                startDate = DateTime.UtcNow.AddMonths(-1);
+            if (!endDate.HasValue)
+                endDate = DateTime.UtcNow;
+
+            // ✅ Tablo prefix'i eklendi: oc.VendorId
+            var whereClause = $"WHERE oc.VendorId = {vendor.Id}";
+            whereClause += $" AND oc.CreatedOnUtc >= '{startDate.Value:yyyy-MM-dd 00:00:00}'";
+            whereClause += $" AND oc.CreatedOnUtc <= '{endDate.Value:yyyy-MM-dd 23:59:59}'";
+
+            // Summary
+            var summarySql = $@"
+                SELECT 
+                    COUNT(*) as TotalOrders,
+                    COALESCE(SUM(oc.NetPrice), 0) as TotalRevenue,
+                    COALESCE(SUM(oc.CommissionAmount), 0) as TotalCommission,
+                    COALESCE(SUM(oc.MarketplaceFee), 0) as TotalFee,
+                    COALESCE(SUM(oc.TaxWithholding), 0) as TotalTax,
+                    COALESCE(SUM(oc.VendorNetAmount), 0) as TotalVendorNet
+                FROM `MarketplaceOrderCommission` oc
+                {whereClause}";
+
+            var summary = (await _dataProvider.QueryAsync<dynamic>(summarySql)).FirstOrDefault();
+
+            // Details (last 100)
+            var detailsSql = $@"
+                SELECT 
+                    oc.OrderId, oc.ProductId, oc.NetPrice, oc.CommissionRate,
+                    oc.CommissionAmount, oc.MarketplaceFee, oc.TaxWithholding,
+                    oc.VendorNetAmount, oc.CreatedOnUtc,
+                    p.Name as ProductName
+                FROM `MarketplaceOrderCommission` oc
+                LEFT JOIN `Product` p ON oc.ProductId = p.Id
+                {whereClause}
+                ORDER BY oc.CreatedOnUtc DESC
+                LIMIT 100";
+
+            var details = await _dataProvider.QueryAsync<dynamic>(detailsSql);
+
+            return Json(new
+            {
+                success = true,
+                summary = summary,
+                details = details
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, error = ex.Message });
+        }
+    }
+
+    // Vendor's own transactions
+    public async Task<IActionResult> MyTransactions()
+    {
+        var vendor = await _workContext.GetCurrentVendorAsync();
+        if (vendor == null)
+            return Challenge();
+
+        // ✅ Aktif menüyü işaretle
+        ViewData["ActiveMenuItemSystemName"] = "Finance.MyTransactions";
+
+        return View("~/Plugins/Marketplace.VendorExtensions/Views/MyTransactions.cshtml");
+    }
+
+    [HttpPost]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> GetMyTransactions(
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        int? transactionType = null)
+    {
+        var vendor = await _workContext.GetCurrentVendorAsync();
+        if (vendor == null)
+            return Json(new { error = "Unauthorized" });
+
+        try
+        {
+            // Default to last 30 days
+            if (!startDate.HasValue)
+                startDate = DateTime.UtcNow.AddMonths(-1);
+            if (!endDate.HasValue)
+                endDate = DateTime.UtcNow;
+
+            // Get current account
+            var account = await _vendorAccountService.GetOrCreateCurrentAccountAsync(vendor.Id);
+
+            // Build WHERE clause
+            var whereClause = $"WHERE VendorId = {vendor.Id}";
+            whereClause += $" AND CreatedOnUtc >= '{startDate.Value:yyyy-MM-dd 00:00:00}'";
+            whereClause += $" AND CreatedOnUtc <= '{endDate.Value:yyyy-MM-dd 23:59:59}'";
+            
+            if (transactionType.HasValue && transactionType.Value > 0)
+                whereClause += $" AND Type = {transactionType.Value}";
+
+            var sql = $@"SELECT 
+                Id, VendorId, OrderId, Type, Amount, BalanceAfter, 
+                Description, ReferenceNumber, CreatedOnUtc
+                FROM `MarketplaceVendorTransaction`
+                {whereClause}
+                ORDER BY CreatedOnUtc DESC
+                LIMIT 100";
+
+            var transactions = await _dataProvider.QueryAsync<VendorTransactionData>(sql);
+
+            return Json(new
+            {
+                success = true,
+                account = new
+                {
+                    balance = account.Balance,
+                    totalCredit = account.TotalCredit,
+                    totalDebit = account.TotalDebit,
+                    lastUpdated = account.LastUpdatedUtc
+                },
+                transactions = transactions.Select(t => new
+                {
+                    id = t.Id,
+                    orderId = t.OrderId,
+                    type = t.Type,
+                    typeName = GetTransactionTypeName(t.Type),
+                    amount = t.Amount,
+                    balanceAfter = t.BalanceAfter,
+                    description = t.Description ?? "",
+                    referenceNumber = t.ReferenceNumber ?? "",
+                    createdOnUtc = t.CreatedOnUtc,
+                    createdOnStr = t.CreatedOnUtc.ToString("dd.MM.yyyy HH:mm")
+                })
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, error = ex.Message });
+        }
+    }
+}

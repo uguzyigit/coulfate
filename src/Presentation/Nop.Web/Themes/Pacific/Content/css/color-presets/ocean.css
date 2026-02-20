@@ -1,0 +1,11 @@
+/* ========================================
+   PACIFIC THEME - Ocean Color Preset
+   #3498db
+   ======================================== */
+
+:root {
+  --pacific-primary: #3498db;
+  --pacific-primary-hover: #2980b9;
+  --pacific-primary-light: #5dade2;
+  --pacific-primary-rgb: 52, 152, 219;
+}

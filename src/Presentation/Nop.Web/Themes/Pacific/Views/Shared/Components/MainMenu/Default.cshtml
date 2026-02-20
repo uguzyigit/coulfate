@@ -1,0 +1,82 @@
+@model MenuModel
+
+@using Nop.Core.Domain.Menus;
+@using Nop.Web.Models.Menus;
+
+<script src="~/js/public.menu.js" asp-location="Footer"></script>
+<script asp-location="Footer">
+    mainMenu.init('.menu-container .menu__toggle, .menu-container .menu__item-toggle', 'menu-dropdown--active');
+</script>
+
+<nav class="menu-container pacific-menu-container">
+    <button id="menu-@Model.Id" class="pacific-menu-toggle menu__toggle" aria-expanded="false" aria-controls="pacific-menu-list">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+        </svg>
+        <span>@Model.Name</span>
+    </button>
+    <ul id="pacific-menu-list" role="menubar" class="pacific-menu menu @Model.CssClass" aria-labelledby="menu-@Model.Id">
+        @foreach (var menuItem in Model.Items)
+        {
+            <li class="pacific-menu-item menu__item @(menuItem.ChildrenItems.Any() ? "has-children" : "") @menuItem.CssClass" role="none">
+                @if (menuItem.ChildrenItems.Any())
+                {
+                    <a href="@menuItem.Url" class="pacific-menu-link menu__link" role="menuitem" aria-haspopup="true" aria-expanded="false">
+                        @menuItem.Title
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="dropdown-arrow">
+                            <path d="M7 10l5 5 5-5z"/>
+                        </svg>
+                    </a>
+                    @if (menuItem.Template == MenuItemTemplate.Grid)
+                    {
+                        <!-- Mega Menu -->
+                        <div class="pacific-megamenu" role="menu" aria-label="@menuItem.Title">
+                            <div class="pacific-megamenu-grid">
+                                @{
+                                    var columns = menuItem.ChildrenItems.Count > 4 ? 4 : menuItem.ChildrenItems.Count;
+                                }
+                                @foreach (var childItem in menuItem.ChildrenItems)
+                                {
+                                    <div class="pacific-megamenu-column">
+                                        <h4>
+                                            <a href="@childItem.Url">@childItem.Title</a>
+                                        </h4>
+                                        @if (childItem.ChildrenItems.Any())
+                                        {
+                                            <ul class="pacific-megamenu-list">
+                                                @foreach (var subItem in childItem.ChildrenItems)
+                                                {
+                                                    <li>
+                                                        <a href="@subItem.Url" role="menuitem">@subItem.Title</a>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Simple Dropdown -->
+                        <ul class="pacific-dropdown" role="menu" aria-label="@menuItem.Title">
+                            @foreach (var childItem in menuItem.ChildrenItems)
+                            {
+                                <li role="none">
+                                    <a href="@childItem.Url" role="menuitem">@childItem.Title</a>
+                                </li>
+                            }
+                        </ul>
+                    }
+                }
+                else
+                {
+                    <a href="@menuItem.Url" class="pacific-menu-link menu__link" role="menuitem">
+                        @menuItem.Title
+                    </a>
+                }
+            </li>
+        }
+    </ul>
+</nav>

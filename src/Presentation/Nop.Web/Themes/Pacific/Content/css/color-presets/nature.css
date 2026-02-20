@@ -1,0 +1,11 @@
+/* ========================================
+   PACIFIC THEME - Nature Color Preset
+   #16a085
+   ======================================== */
+
+:root {
+  --pacific-primary: #16a085;
+  --pacific-primary-hover: #138d75;
+  --pacific-primary-light: #1abc9c;
+  --pacific-primary-rgb: 22, 160, 133;
+}

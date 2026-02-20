@@ -1,0 +1,180 @@
+@model VendorInvoiceModel
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = $"Fatura Detayı - {Model.InvoiceNo}";
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        <i class="fas fa-file-invoice"></i> Fatura Detayı
+    </h1>
+    <div class="float-right">
+        <a href="@Url.Action("List", "VendorInvoice", new { area = AreaNames.ADMIN })" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Geri
+        </a>
+        @if (Model.HasPdf)
+        {
+            <a href="@Url.Action("DownloadPdf", "VendorInvoice", new { id = Model.Id, area = AreaNames.ADMIN })" 
+               class="btn btn-success" target="_blank">
+                <i class="fas fa-download"></i> PDF İndir
+            </a>
+        }
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="form-horizontal">
+            <div class="cards-group">
+                <!-- Invoice Header -->
+                <div class="card card-default">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-info-circle"></i> Fatura Bilgileri
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4">Fatura No:</dt>
+                                    <dd class="col-sm-8"><strong>@Model.InvoiceNo</strong></dd>
+
+                                    <dt class="col-sm-4">Sipariş No:</dt>
+                                    <dd class="col-sm-8">
+                                        @if (Model.OrderId.HasValue)
+                                        {
+                                            <a href="@Url.Action("Edit", "Order", new { id = Model.OrderId, area = AreaNames.ADMIN })" target="_blank">
+                                                #@Model.OrderNumber
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span>-</span>
+                                        }
+                                    </dd>
+
+                                    <dt class="col-sm-4">Tarih:</dt>
+                                    <dd class="col-sm-8">@Model.CreatedOn</dd>
+
+                                    <dt class="col-sm-4">Fatura Türü:</dt>
+                                    <dd class="col-sm-8"><span class="badge badge-secondary">@Model.InvoiceType</span></dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4">E-Belge Tipi:</dt>
+                                    <dd class="col-sm-8">
+                                        @if (!string.IsNullOrEmpty(Model.EDocumentType) && Model.EDocumentType != "-")
+                                        {
+                                            <span class="badge badge-info">@Model.EDocumentType</span>
+                                        }
+                                        else
+                                        {
+                                            <span>-</span>
+                                        }
+                                    </dd>
+
+                                    <dt class="col-sm-4">Durum:</dt>
+                                    <dd class="col-sm-8"><span class="badge @Model.StatusClass">@Model.Status</span></dd>
+
+                                    <dt class="col-sm-4">PDF:</dt>
+                                    <dd class="col-sm-8">
+                                        @if (Model.HasPdf)
+                                        {
+                                            <span class="text-success"><i class="fas fa-check-circle"></i> Hazır</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-warning"><i class="fas fa-clock"></i> Bekleniyor</span>
+                                        }
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invoice Items -->
+                <div class="card card-default">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-shopping-cart"></i> Fatura Kalemleri
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(Model.Description))
+                        {
+                            @Html.Raw(Model.Description)
+                        }
+                        else
+                        {
+                            <p class="text-muted">Ürün bilgisi mevcut değil.</p>
+                        }
+                    </div>
+                </div>
+
+                <!-- Financial Summary -->
+                <div class="card card-default">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-calculator"></i> Mali Özet
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 offset-md-6">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Ara Toplam:</strong></td>
+                                        <td class="text-right">@Model.TotalAmount.ToString("N2") ₺</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>KDV:</strong></td>
+                                        <td class="text-right">@Model.VatAmount.ToString("N2") ₺</td>
+                                    </tr>
+                                    <tr class="table-active">
+                                        <td><strong>Genel Toplam:</strong></td>
+                                        <td class="text-right">
+                                            <strong class="text-primary">@Model.GrossAmount.ToString("N2") ₺</strong>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Box -->
+                <div class="card card-info">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-info-circle"></i> Bilgilendirme
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p>Bu fatura <strong>@Model.OrderNumber</strong> numaralı siparişiniz için kesilmiştir.</p>
+                        <p class="mb-0">
+                            <strong>Fatura İçeriği:</strong> 
+                            @switch (Model.InvoiceType)
+                            {
+                                case "Komisyon":
+                                    <span>Satış komisyonu tutarını içermektedir.</span>
+                                    break;
+                                case "Kargo":
+                                    <span>Kargo hizmet bedelini içermektedir.</span>
+                                    break;
+                                case "Ceza":
+                                    <span>İade, iptal veya sözleşme ihlali ceza tutarını içermektedir.</span>
+                                    break;
+                                case "Kombine":
+                                    <span>Komisyon, kargo ve/veya ceza tutarlarını içermektedir.</span>
+                                    break;
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,14 @@
+{
+  "Group": "Marketplace",
+  "FriendlyName": "Commission Management",
+  "SystemName": "Marketplace.Commission",
+  "Version": "1.0.0",
+  "SupportedVersions": [ "4.90" ],
+  "Author": "Coulfate",
+  "DisplayOrder": 2,
+  "FileName": "Nop.Plugin.Marketplace.Commission.dll",
+  "Description": "Advanced commission management system for marketplace vendors. Manage category and product-specific commission rates, track order commissions, and generate detailed reports.",
+  "LimitedToStores": [],
+  "LimitedToCustomerRoles": [],
+  "DependsOnSystemNames": [ "Marketplace.Core" ]
+}

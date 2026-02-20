@@ -1,0 +1,231 @@
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Marketplace.Commission.ProductCommissions").Text;
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        <i class="fas fa-box"></i>
+        @T("Plugins.Marketplace.Commission.ProductCommissions")
+    </h1>
+</div>
+
+<div class="content">
+    <div class="card card-default">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-plus"></i>
+                @T("Plugins.Marketplace.Commission.ProductCommissions.Add")
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="form-row">
+                <div class="col-md-2">
+                    <input type="number" id="new-product-id" class="form-control" placeholder="Product ID" />
+                </div>
+                <div class="col-md-2">
+                    <input type="number" id="new-rate" class="form-control" placeholder="Rate (%)" step="1" min="0" max="100" />
+                </div>
+                <div class="col-md-3">
+                    <input type="text" id="new-reason" class="form-control" placeholder="Reason" />
+                </div>
+                <div class="col-md-3">
+                    <input type="datetime-local" id="new-expires" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <button type="button" id="btn-add-product" class="btn btn-success btn-block">
+                        <i class="fas fa-plus"></i> @T("Admin.Common.Add")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-default mt-3">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-list"></i>
+                @T("Plugins.Marketplace.Commission.ProductCommissions.List")
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                @T("Plugins.Marketplace.Commission.ProductCommissions.Info")
+            </div>
+            
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>@T("Plugins.Marketplace.Commission.Fields.ProductId")</th>
+                        <th>@T("Plugins.Marketplace.Commission.Fields.ProductName")</th>
+                        <th>@T("Plugins.Marketplace.Commission.Fields.Rate") (%)</th>
+                        <th>@T("Plugins.Marketplace.Commission.Fields.Reason")</th>
+                        <th>@T("Plugins.Marketplace.Commission.Fields.CreatedOn")</th>
+                        <th>@T("Plugins.Marketplace.Commission.Fields.ExpiresOn")</th>
+                        <th>@T("Admin.Common.Actions")</th>
+                    </tr>
+                </thead>
+                <tbody id="product-tbody">
+                    <tr>
+                        <td colspan="7" class="text-center">
+                            <i class="fas fa-spinner fa-spin"></i> @T("Admin.Common.Loading")
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function() {
+        var translations = {
+            save: '@T("Admin.Common.Save").Text',
+            delete: '@T("Admin.Common.Delete").Text',
+            loading: '@T("Admin.Common.Loading").Text',
+            error: '@T("Admin.Common.Error").Text',
+            noProducts: '@T("Plugins.Marketplace.Commission.ProductCommissions.NoProducts").Text',
+            confirmDelete: '@T("Admin.Common.AreYouSure").Text'
+        };
+
+        function getAntiForgeryToken() {
+            return $('input[name="__RequestVerificationToken"]').val();
+        }
+
+        function loadProducts() {
+            $.ajax({
+                url: '@Url.Action("ProductCommissionList", "Commission", new { area = "Admin" })',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    __RequestVerificationToken: getAntiForgeryToken()
+                },
+                success: function(result) {
+                    var tbody = $('#product-tbody');
+                    tbody.empty();
+                    
+                    if (result.data && result.data.length > 0) {
+                        $.each(result.data, function(index, item) {
+                            var expiresDate = item.ExpiresOnUtc ? new Date(item.ExpiresOnUtc).toLocaleDateString() : '-';
+                            var createdDate = new Date(item.CreatedOnUtc).toLocaleDateString();
+                            var reason = item.Reason || '-';
+                            var rate = Math.round(item.Rate);
+                            
+                            var row = '<tr>' +
+                                '<td>' + item.ProductId + '</td>' +
+                                '<td>' + item.ProductName + '</td>' +
+                                '<td>' + rate + '%</td>' +
+                                '<td>' + reason + '</td>' +
+                                '<td>' + createdDate + '</td>' +
+                                '<td>' + expiresDate + '</td>' +
+                                '<td>' +
+                                    '<button class="btn btn-danger btn-sm delete-btn" data-id="' + item.Id + '">' +
+                                        '<i class="fas fa-trash"></i> ' + translations.delete +
+                                    '</button>' +
+                                '</td>' +
+                                '</tr>';
+                            tbody.append(row);
+                        });
+                    } else {
+                        tbody.html('<tr><td colspan="7" class="text-center">' + translations.noProducts + '</td></tr>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    var tbody = $('#product-tbody');
+                    tbody.html('<tr><td colspan="7" class="text-center text-danger"><i class="fas fa-exclamation-triangle"></i> ' + translations.error + ': ' + error + '</td></tr>');
+                    console.error('Error loading products:', error);
+                    console.error('Response:', xhr.responseText);
+                }
+            });
+        }
+
+        $('#btn-add-product').click(function() {
+            var productId = parseInt($('#new-product-id').val());
+            var rate = parseFloat($('#new-rate').val());
+            var reason = $('#new-reason').val();
+            var expiresStr = $('#new-expires').val();
+            var expiresOnUtc = expiresStr ? new Date(expiresStr).toISOString() : null;
+
+            if (isNaN(productId) || productId <= 0) {
+                alert('Please enter a valid Product ID');
+                return;
+            }
+
+            if (isNaN(rate) || rate < 0 || rate > 100) {
+                alert('Please enter a valid rate between 0 and 100');
+                return;
+            }
+
+            var button = $(this);
+            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> ' + translations.loading);
+
+            $.ajax({
+                url: '@Url.Action("SetProductCommission", "Commission", new { area = "Admin" })',
+                type: 'POST',
+                data: { 
+                    productId: productId, 
+                    rate: rate, 
+                    reason: reason, 
+                    expiresOnUtc: expiresOnUtc,
+                    __RequestVerificationToken: getAntiForgeryToken()
+                },
+                success: function(result) {
+                    button.prop('disabled', false).html('<i class="fas fa-plus"></i> ' + translations.save);
+                    
+                    if (result.success) {
+                        $('#new-product-id').val('');
+                        $('#new-rate').val('');
+                        $('#new-reason').val('');
+                        $('#new-expires').val('');
+                        loadProducts();
+                    } else {
+                        alert(translations.error + ': ' + (result.error || 'Unknown error'));
+                    }
+                },
+                error: function(xhr, status, error) {
+                    button.prop('disabled', false).html('<i class="fas fa-plus"></i> ' + translations.save);
+                    alert(translations.error + ': ' + error);
+                    console.error('Error saving commission:', error);
+                    console.error('Response:', xhr.responseText);
+                }
+            });
+        });
+
+        $(document).on('click', '.delete-btn', function() {
+            if (!confirm(translations.confirmDelete)) {
+                return;
+            }
+
+            var button = $(this);
+            var id = button.data('id');
+
+            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+            $.ajax({
+                url: '@Url.Action("DeleteProductCommission", "Commission", new { area = "Admin" })',
+                type: 'POST',
+                data: { 
+                    id: id,
+                    __RequestVerificationToken: getAntiForgeryToken()
+                },
+                success: function(result) {
+                    if (result.success) {
+                        loadProducts();
+                    } else {
+                        button.prop('disabled', false).html('<i class="fas fa-trash"></i> ' + translations.delete);
+                        alert(translations.error + ': ' + (result.error || 'Unknown error'));
+                    }
+                },
+                error: function(xhr, status, error) {
+                    button.prop('disabled', false).html('<i class="fas fa-trash"></i> ' + translations.delete);
+                    alert(translations.error + ': ' + error);
+                    console.error('Error deleting commission:', error);
+                    console.error('Response:', xhr.responseText);
+                }
+            });
+        });
+
+        loadProducts();
+    });
+</script>

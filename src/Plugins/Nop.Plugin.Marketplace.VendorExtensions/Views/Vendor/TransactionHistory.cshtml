@@ -1,0 +1,135 @@
+@model VendorTransactionHistoryModel
+
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        <i class="fas fa-history"></i>
+        İşlem Geçmişi
+    </h1>
+</div>
+
+<div class="content">
+    <div class="card card-default">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-filter"></i>
+                Filtreler
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Başlangıç Tarihi</label>
+                        <input type="date" id="start-date" class="form-control" value="@DateTime.UtcNow.AddMonths(-1).ToString("yyyy-MM-dd")" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>Bitiş Tarihi</label>
+                        <input type="date" id="end-date" class="form-control" value="@DateTime.UtcNow.ToString("yyyy-MM-dd")" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button type="button" id="btn-load" class="btn btn-primary btn-block">
+                            <i class="fas fa-search"></i> Yükle
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-default">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-list"></i>
+                İşlemler
+            </h3>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Tip</th>
+                        <th>Açıklama</th>
+                        <th>Sipariş</th>
+                        <th>Tutar</th>
+                        <th>Bakiye</th>
+                    </tr>
+                </thead>
+                <tbody id="transactions-tbody">
+                    <tr>
+                        <td colspan="6" class="text-center">Yükleniyor...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    function getAntiForgeryToken() {
+        return $('input[name="__RequestVerificationToken"]').val();
+    }
+
+    function loadTransactions() {
+        var startDate = $('#start-date').val();
+        var endDate = $('#end-date').val();
+
+        $.ajax({
+            url: '@Url.Action("GetVendorTransactionList", "VendorExtensions", new { area = "Admin" })',
+            type: 'POST',
+            data: {
+                startDate: startDate,
+                endDate: endDate,
+                __RequestVerificationToken: getAntiForgeryToken()
+            },
+            success: function(response) {
+                if (response.success) {
+                    var tbody = $('#transactions-tbody');
+                    tbody.empty();
+
+                    if (response.transactions && response.transactions.length > 0) {
+                        $.each(response.transactions, function(i, t) {
+                            var badgeClass = t.Amount >= 0 ? 'badge-success' : 'badge-danger';
+                            var amountColor = t.Amount >= 0 ? 'green' : 'red';
+                            var orderLink = t.OrderId ? '<a href="/Admin/Order/Edit/' + t.OrderId + '" target="_blank">#' + t.OrderId + '</a>' : '-';
+
+                            var row = '<tr>' +
+                                '<td>' + t.CreatedOnStr + '</td>' +
+                                '<td><span class="badge ' + badgeClass + '">' + t.TypeName + '</span></td>' +
+                                '<td>' + (t.Description || '-') + '</td>' +
+                                '<td>' + orderLink + '</td>' +
+                                '<td style="color: ' + amountColor + '; font-weight: bold;">' + t.Amount.toFixed(2) + ' TL</td>' +
+                                '<td>' + t.BalanceAfter.toFixed(2) + ' TL</td>' +
+                                '</tr>';
+                            tbody.append(row);
+                        });
+                    } else {
+                        tbody.html('<tr><td colspan="6" class="text-center">İşlem bulunamadı</td></tr>');
+                    }
+                } else {
+                    alert('Hata: ' + (response.message || 'Bilinmeyen hata'));
+                }
+            },
+            error: function() {
+                alert('Veriler yüklenirken hata oluştu');
+            }
+        });
+    }
+
+    $('#btn-load').click(function() {
+        loadTransactions();
+    });
+
+    loadTransactions();
+});
+</script>

@@ -1,0 +1,14 @@
+{
+  "Group": "Shipping rate computation",
+  "FriendlyName": "Marketplace Shipping Manager",
+  "SystemName": "Marketplace.ShippingManager",
+  "Version": "1.0.0",
+  "SupportedVersions": [ "4.90" ],
+  "Author": "Coulfate",
+  "DisplayOrder": 1,
+  "FileName": "Nop.Plugin.Marketplace.ShippingManager.dll",
+  "Description": "Marketplace shipping management plugin. Allows vendors to configure their shipping preferences and integrates with shipping providers like PTT Kargo.",
+  "DependsOnSystemNames": [
+    "Marketplace.Core"
+  ]
+}

@@ -1,0 +1,218 @@
+@model ProductOverviewModel
+
+@using Nop.Core
+@using Nop.Core.Domain.Catalog
+@using Nop.Core.Domain.Orders
+@using Nop.Core.Domain.Tax
+
+@inject CatalogSettings catalogSettings
+@inject IWorkContext workContext
+
+@{
+    //prepare "Add to cart" AJAX link
+    var addtocartlink = "";
+    var shoppingCartTypeId = (int)ShoppingCartType.ShoppingCart;
+    var quantity = 1;
+    if (Model.ProductPrice.ForceRedirectionAfterAddingToCart)
+    {
+        addtocartlink = Url.RouteUrl("AddProductToCart-Catalog", new { productId = Model.Id, shoppingCartTypeId = shoppingCartTypeId, quantity = quantity, forceredirection = Model.ProductPrice.ForceRedirectionAfterAddingToCart });
+    }
+    else
+    {
+        addtocartlink = Url.RouteUrl("AddProductToCart-Catalog", new { productId = Model.Id, shoppingCartTypeId = shoppingCartTypeId, quantity = quantity });
+    }
+
+    var addtowishlistlink = Url.RouteUrl("AddProductToCart-Catalog", new { productId = Model.Id, shoppingCartTypeId = (int)ShoppingCartType.Wishlist, quantity = quantity });
+    var addtocomparelink = Url.RouteUrl("AddProductToCompareList", new { productId = Model.Id });
+    var productUrl = Url.RouteUrl("Product", new { SeName = Model.SeName });
+
+    // Check if has discount
+    var hasDiscount = !string.IsNullOrEmpty(Model.ProductPrice.OldPrice);
+}
+
+<article class="product-item pacific-product-card" data-productid="@Model.Id">
+    <div class="picture pacific-product-image">
+        <!-- Product Badges -->
+        <div class="pacific-product-badges">
+            @if (hasDiscount)
+            {
+                <span class="pacific-badge pacific-badge-sale">@T("Products.Sale", "Sale")</span>
+            }
+            @if (Model.MarkAsNew)
+            {
+                <span class="pacific-badge pacific-badge-new">@T("Products.New", "New")</span>
+            }
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="pacific-product-actions">
+            @if (!Model.ProductPrice.DisableWishlistButton)
+            {
+                @await Html.PartialAsync("_MoveToWishlistModal", Model.ProductToWishlist)
+                <button type="button"
+                        class="pacific-product-action-btn"
+                        title="@T("ShoppingCart.AddToWishlist")"
+                        onclick="AjaxCart.addproducttocart_catalog('@addtowishlistlink');return false;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                </button>
+            }
+            @if (!Model.ProductPrice.DisableAddToCompareListButton)
+            {
+                <button type="button"
+                        class="pacific-product-action-btn"
+                        title="@T("ShoppingCart.AddToCompareList")"
+                        onclick="AjaxCart.addproducttocomparelist('@addtocomparelink');return false;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M9 9V3H7v6H1v2h6v6h2v-6h6V9H9zm12 0h-6v2h6v6h2v-6h6v-2h-6V3h-2v6z"/>
+                    </svg>
+                </button>
+            }
+            <a href="@productUrl"
+               class="pacific-product-action-btn"
+               title="@T("Products.QuickView", "Quick View")">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7z"/>
+                </svg>
+            </a>
+        </div>
+
+        <!-- Product Image -->
+        @if (Model.PictureModels.Count > 1)
+        {
+            <div class="swiper" id="swiper-@Model.Id" dir="@Html.GetUIDirection(!await Html.ShouldUseRtlThemeAsync())">
+                <div class="swiper-wrapper">
+                    @foreach (var picture in Model.PictureModels)
+                    {
+                        <a class="swiper-slide" href="@productUrl" title="@picture.Title">
+                            <img alt="@picture.AlternateText" src="@picture.ImageUrl" title="@picture.Title" loading="lazy" />
+                        </a>
+                    }
+                </div>
+                <div class="swiper-pagination"></div>
+            </div>
+
+            <script asp-location="Footer">
+                new Swiper('#swiper-@(Model.Id)', {
+                    pagination: {
+                        clickable: true,
+                        el: '.swiper-pagination',
+                    },
+                });
+            </script>
+        }
+        else
+        {
+            var picture = Model.PictureModels.FirstOrDefault();
+            <a href="@productUrl" title="@picture?.Title">
+                <img alt="@picture?.AlternateText" src="@picture?.ImageUrl" title="@picture?.Title" loading="lazy" />
+            </a>
+        }
+    </div>
+
+    <div class="details pacific-product-details">
+        <!-- Product Title -->
+        <h2 class="product-title pacific-product-title">
+            <a href="@productUrl">@Model.Name</a>
+        </h2>
+
+        <!-- SKU -->
+        @if (catalogSettings.ShowSkuOnCatalogPages && !string.IsNullOrEmpty(Model.Sku))
+        {
+            <div class="sku pacific-product-sku">
+                @Model.Sku
+            </div>
+        }
+
+        <!-- Rating -->
+        @if (Model.ReviewOverviewModel.AllowCustomerReviews)
+        {
+            var ratingPercent = 0;
+            var ratingStars = 0;
+            if (Model.ReviewOverviewModel.TotalReviews != 0)
+            {
+                ratingPercent = ((Model.ReviewOverviewModel.RatingSum * 100) / Model.ReviewOverviewModel.TotalReviews) / 5;
+                ratingStars = (Model.ReviewOverviewModel.RatingSum * 5) / (Model.ReviewOverviewModel.TotalReviews * 5);
+            }
+            <div class="pacific-product-rating product-rating-box" title="@string.Format(T("Reviews.TotalReviews").Text, Model.ReviewOverviewModel.TotalReviews)">
+                <div class="pacific-rating-stars rating">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="@(i <= ratingStars ? "filled" : "")">
+                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                        </svg>
+                    }
+                </div>
+                <span class="pacific-rating-count">(@Model.ReviewOverviewModel.TotalReviews)</span>
+            </div>
+        }
+
+        <!-- Short Description -->
+        @if (catalogSettings.ShowShortDescriptionOnCatalogPages && !string.IsNullOrEmpty(Model.ShortDescription))
+        {
+            <div class="description pacific-product-description">
+                @Html.Raw(Model.ShortDescription)
+            </div>
+        }
+
+        <div class="add-info pacific-product-add-info">
+            @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.ProductBoxAddinfoBefore, additionalData = Model })
+
+            <!-- Prices -->
+            <div class="prices pacific-product-price">
+                @if (!string.IsNullOrEmpty(Model.ProductPrice.OldPrice))
+                {
+                    <span class="price old-price pacific-price-old">@Model.ProductPrice.OldPrice</span>
+                }
+                <span class="price actual-price pacific-price-current">@Model.ProductPrice.Price</span>
+            </div>
+
+            @if (Model.ProductPrice.DisplayTaxShippingInfo)
+            {
+                var inclTax = await workContext.GetTaxDisplayTypeAsync() == TaxDisplayType.IncludingTax;
+                <span class="tax-shipping-info pacific-tax-info">
+                    @T(inclTax ? "Products.Price.TaxShipping.InclTax" : "Products.Price.TaxShipping.ExclTax", Url.RouteUrl("Topic", new { SeName = "shippinginfo" }))
+                </span>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.ProductPrice.BasePricePAngV))
+            {
+                <div class="base-price-pangv pacific-base-price">
+                    @Model.ProductPrice.BasePricePAngV
+                </div>
+            }
+
+            @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.ProductBoxAddinfoMiddle, additionalData = Model })
+
+            <!-- Add to Cart Button -->
+            <div class="buttons pacific-product-buttons">
+                @if (!Model.ProductPrice.DisableBuyButton)
+                {
+                    var addToCartText = T("ShoppingCart.AddToCart").Text;
+                    if (Model.ProductPrice.IsRental)
+                    {
+                        addToCartText = T("ShoppingCart.Rent").Text;
+                    }
+                    if (Model.ProductPrice.AvailableForPreOrder)
+                    {
+                        addToCartText = T("ShoppingCart.PreOrder").Text;
+                    }
+                    <button type="button"
+                            class="pacific-product-add-to-cart button-2 product-box-add-to-cart-button"
+                            onclick="AjaxCart.addproducttocart_catalog('@addtocartlink');return false;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <circle cx="9" cy="21" r="1"/>
+                            <circle cx="20" cy="21" r="1"/>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                        </svg>
+                        @addToCartText
+                    </button>
+                }
+            </div>
+
+            @await Component.InvokeAsync(typeof(WidgetViewComponent), new { widgetZone = PublicWidgetZones.ProductBoxAddinfoAfter, additionalData = Model })
+        </div>
+    </div>
+</article>

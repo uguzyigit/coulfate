@@ -1,0 +1,14 @@
+{
+  "Group": "Payment methods",
+  "FriendlyName": "iyzico Payment",
+  "SystemName": "Payments.Iyzico",
+  "Version": "1.0.0",
+  "SupportedVersions": [ "4.90" ],
+  "Author": "Marketplace Team",
+  "DisplayOrder": 1,
+  "FileName": "Nop.Plugin.Payments.Iyzico.dll",
+  "Description": "iyzico pazaryeri ödeme sistemi. 3DS ödeme, otomatik onay, iade yönetimi ve raporlama özellikleri içerir.",
+  "LimitedToStores": [],
+  "LimitedToCustomerRoles": [],
+  "DependsOnSystemNames": []
+}

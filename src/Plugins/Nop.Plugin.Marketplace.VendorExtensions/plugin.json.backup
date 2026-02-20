@@ -1,0 +1,14 @@
+{
+  "Group": "Marketplace",
+  "FriendlyName": "Marketplace Vendor Extensions",
+  "SystemName": "Marketplace.VendorExtensions",
+  "Version": "2.0.0",
+  "SupportedVersions": [ "4.90" ],
+  "Author": "Your Company",
+  "DisplayOrder": 1,
+  "FileName": "Nop.Plugin.Marketplace.VendorExtensions.dll",
+  "Description": "Extends NopCommerce native Vendor functionality with marketplace features: balance management, payouts, commission tracking, and advanced vendor tools.",
+  "LimitedToStores": [],
+  "LimitedToCustomerRoles": [],
+  "DependsOnSystemNames": []
+}

@@ -1,0 +1,280 @@
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = T("Plugins.Marketplace.VendorExtensions.MyTransactions").Text;
+}
+
+@using Nop.Web.Framework.UI
+@inject INopHtmlHelper NopHtml
+
+@{
+    NopHtml.SetActiveMenuItemSystemName("Finance.MyTransactions");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        <i class="fas fa-list-alt"></i>
+        @T("Plugins.Marketplace.VendorExtensions.MyTransactions.Title")
+    </h1>
+</div>
+
+<div class="content">
+    <div class="cards-group">
+        <!-- Filters Card -->
+        <div class="card card-default">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-filter"></i>
+                    @T("Plugins.Marketplace.VendorExtensions.TransactionHistory.Filters")
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>@T("Plugins.Marketplace.VendorExtensions.TransactionHistory.StartDate")</label>
+                            <input type="date" id="filter-start-date" class="form-control" value="@DateTime.UtcNow.AddMonths(-1).ToString("yyyy-MM-dd")" />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>@T("Plugins.Marketplace.VendorExtensions.TransactionHistory.EndDate")</label>
+                            <input type="date" id="filter-end-date" class="form-control" value="@DateTime.UtcNow.ToString("yyyy-MM-dd")" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>@T("Plugins.Marketplace.VendorExtensions.TransactionHistory.TransactionType")</label>
+                            <select id="filter-type" class="form-control">
+                                <option value="">@T("Plugins.Marketplace.VendorExtensions.TransactionHistory.AllTypes")</option>
+                                <option value="1">@T("Plugins.Marketplace.VendorExtensions.TransactionType.OrderRevenue")</option>
+                                <option value="2">@T("Plugins.Marketplace.VendorExtensions.TransactionType.Commission")</option>
+                                <option value="3">@T("Plugins.Marketplace.VendorExtensions.TransactionType.MarketplaceFee")</option>
+                                <option value="4">@T("Plugins.Marketplace.VendorExtensions.TransactionType.TaxWithholding")</option>
+                                <option value="5">@T("Plugins.Marketplace.VendorExtensions.TransactionType.ShippingCost")</option>
+                                <option value="10">@T("Plugins.Marketplace.VendorExtensions.TransactionType.Refund")</option>
+                                <option value="9">@T("Plugins.Marketplace.VendorExtensions.TransactionType.ManualAdjustment")</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <button type="button" class="btn btn-primary btn-block" onclick="loadTransactions()">
+                                <i class="fas fa-search"></i> @T("Plugins.Marketplace.VendorExtensions.TransactionHistory.Load")
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Summary Cards -->
+        <div class="card card-default">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-wallet"></i>
+                    @T("Plugins.Marketplace.VendorExtensions.AccountSummary")
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="small-box bg-info">
+                            <div class="inner">
+                                <h3 id="current-balance">0.00 TL</h3>
+                                <p>@T("Plugins.Marketplace.VendorExtensions.AccountSummary.CurrentBalance")</p>
+                            </div>
+                            <div class="icon"><i class="fas fa-balance-scale"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="small-box bg-success">
+                            <div class="inner">
+                                <h3 id="total-credit">0.00 TL</h3>
+                                <p>@T("Plugins.Marketplace.VendorExtensions.AccountSummary.TotalCredit")</p>
+                            </div>
+                            <div class="icon"><i class="fas fa-arrow-up"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="small-box bg-danger">
+                            <div class="inner">
+                                <h3 id="total-debit">0.00 TL</h3>
+                                <p>@T("Plugins.Marketplace.VendorExtensions.AccountSummary.TotalDebit")</p>
+                            </div>
+                            <div class="icon"><i class="fas fa-arrow-down"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="small-box bg-secondary">
+                            <div class="inner">
+                                <h3 id="last-updated">-</h3>
+                                <p>@T("Plugins.Marketplace.VendorExtensions.AccountSummary.LastUpdated")</p>
+                            </div>
+                            <div class="icon"><i class="fas fa-clock"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions Table -->
+        <div class="card card-default">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-list"></i>
+                    @T("Plugins.Marketplace.VendorExtensions.Transactions")
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>@T("Plugins.Marketplace.VendorExtensions.Transactions.Date")</th>
+                                <th>@T("Plugins.Marketplace.VendorExtensions.Transactions.Type")</th>
+                                <th>@T("Plugins.Marketplace.VendorExtensions.Transactions.Description")</th>
+                                <th>@T("Plugins.Marketplace.VendorExtensions.Transactions.Reference")</th>
+                                <th>@T("Plugins.Marketplace.VendorExtensions.Transactions.Order")</th>
+                                <th class="text-right">@T("Plugins.Marketplace.VendorExtensions.Transactions.Amount")</th>
+                                <th class="text-right">@T("Plugins.Marketplace.VendorExtensions.Transactions.BalanceAfter")</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-tbody">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">
+                                    <i class="fas fa-info-circle"></i> @T("Plugins.Marketplace.Commission.Loading")
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var transactionTypes = {
+    1: '@T("Plugins.Marketplace.VendorExtensions.TransactionType.OrderRevenue")',
+    2: '@T("Plugins.Marketplace.VendorExtensions.TransactionType.Commission")',
+    3: '@T("Plugins.Marketplace.VendorExtensions.TransactionType.MarketplaceFee")',
+    4: '@T("Plugins.Marketplace.VendorExtensions.TransactionType.TaxWithholding")',
+    5: '@T("Plugins.Marketplace.VendorExtensions.TransactionType.ShippingCost")',
+    10: '@T("Plugins.Marketplace.VendorExtensions.TransactionType.Refund")',
+    9: '@T("Plugins.Marketplace.VendorExtensions.TransactionType.ManualAdjustment")'
+};
+
+function loadTransactions() {
+    var startDate = $('#filter-start-date').val();
+    var endDate = $('#filter-end-date').val();
+    var type = $('#filter-type').val();
+    
+    $.ajax({
+        url: '@Url.Action("GetMyTransactions", "VendorExtensions", new { area = "Admin" })',
+        type: 'POST',
+        data: {
+            startDate: startDate,
+            endDate: endDate,
+            transactionType: type
+        },
+        success: function(response) {
+            if (response.error || !response.success) {
+                alert('Error: ' + (response.error || 'Unknown error'));
+                return;
+            }
+            
+            // Update account summary
+            $('#current-balance').text(response.account.balance.toFixed(2) + ' TL');
+            $('#total-credit').text(response.account.totalCredit.toFixed(2) + ' TL');
+            $('#total-debit').text(Math.abs(response.account.totalDebit).toFixed(2) + ' TL');
+            $('#last-updated').text(new Date(response.account.lastUpdated).toLocaleDateString('tr-TR'));
+            
+            // Update balance color
+            if (response.account.balance > 0) {
+                $('#current-balance').parent().parent().removeClass('bg-danger').addClass('bg-success');
+            } else if (response.account.balance < 0) {
+                $('#current-balance').parent().parent().removeClass('bg-success').addClass('bg-danger');
+            } else {
+                $('#current-balance').parent().parent().removeClass('bg-success bg-danger').addClass('bg-info');
+            }
+            
+            // Update transactions table
+            var tbody = $('#transactions-tbody');
+            tbody.empty();
+            
+            if (response.transactions && response.transactions.length > 0) {
+                $.each(response.transactions, function(i, t) {
+                    var badge = getTypeBadge(t.type);
+                    var amountClass = t.amount >= 0 ? 'text-success' : 'text-danger';
+                    var orderLink = t.orderId ? '<a href="/Admin/Order/Edit/' + t.orderId + '" target="_blank">#' + t.orderId + '</a>' : '-';
+                    
+                    var row = '<tr>' +
+                        '<td>' + t.createdOnStr + '</td>' +
+                        '<td>' + badge + '</td>' +
+                        '<td>' + t.description + '</td>' +
+                        '<td><small>' + t.referenceNumber + '</small></td>' +
+                        '<td>' + orderLink + '</td>' +
+                        '<td class="text-right ' + amountClass + '"><strong>' + t.amount.toFixed(2) + ' TL</strong></td>' +
+                        '<td class="text-right">' + t.balanceAfter.toFixed(2) + ' TL</td>' +
+                        '</tr>';
+                    tbody.append(row);
+                });
+            } else {
+                tbody.html('<tr><td colspan="7" class="text-center">@T("Plugins.Marketplace.VendorExtensions.Transactions.NotFound")</td></tr>');
+            }
+        },
+        error: function() {
+            alert('@T("Plugins.Marketplace.VendorExtensions.Error.Loading")');
+        }
+    });
+}
+
+function getTypeBadge(type) {
+    var badges = {
+        1: '<span class="badge badge-success">' + transactionTypes[1] + '</span>',
+        2: '<span class="badge badge-warning">' + transactionTypes[2] + '</span>',
+        3: '<span class="badge badge-danger">' + transactionTypes[3] + '</span>',
+        4: '<span class="badge badge-secondary">' + transactionTypes[4] + '</span>',
+        5: '<span class="badge badge-info">' + transactionTypes[5] + '</span>',
+        10: '<span class="badge badge-danger">' + transactionTypes[10] + '</span>',
+        9: '<span class="badge badge-primary">' + transactionTypes[9] + '</span>'
+    };
+    return badges[type] || '<span class="badge badge-secondary">Unknown</span>';
+}
+
+$(document).ready(function() {
+    loadTransactions();
+});
+</script>
+
+<style>
+.small-box {
+    border-radius: 10px;
+    padding: 20px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+.small-box .inner h3 {
+    font-size: 28px;
+    font-weight: bold;
+    margin: 0 0 10px 0;
+}
+.small-box .inner p {
+    font-size: 14px;
+    margin: 0;
+}
+.small-box .icon {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    font-size: 60px;
+    opacity: 0.3;
+}
+.bg-info { background-color: #17a2b8 !important; }
+.bg-success { background-color: #28a745 !important; }
+.bg-danger { background-color: #dc3545 !important; }
+.bg-secondary { background-color: #6c757d !important; }
+</style>

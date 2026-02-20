@@ -1,0 +1,70 @@
+@{
+    var months = Enumerable.Range(1, 12).Select(i => new { Value = i.ToString("D2"), Text = i.ToString("D2") });
+    var years = Enumerable.Range(DateTime.Now.Year, 15).Select(i => new { Value = i.ToString(), Text = i.ToString() });
+}
+
+<div class="payment-info">
+    <div class="info">
+        <p>@T("Plugins.Payments.Iyzico.Instructions")</p>
+        <div class="message-box info-box">
+            <i class="fa fa-shield"></i>
+            @T("Payment.CardInfo.3DSecure")
+        </div>
+    </div>
+
+    <div class="form-fields">
+        <div class="form-group">
+            <label>@T("Payment.CardholderName")</label>
+            <input type="text" id="CardholderName" name="CardholderName" class="form-control" required />
+        </div>
+
+        <div class="form-group">
+            <label>@T("Payment.CardNumber")</label>
+            <input type="text" id="CardNumber" name="CardNumber" class="form-control" maxlength="19" required />
+        </div>
+
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label>@T("Payment.ExpirationDate")</label>
+                <div class="form-row">
+                    <div class="col">
+                        <select id="ExpireMonth" name="ExpireMonth" class="form-control" required>
+                            <option value="">Ay</option>
+                            @foreach (var month in months)
+                            {
+                                <option value="@month.Value">@month.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col">
+                        <select id="ExpireYear" name="ExpireYear" class="form-control" required>
+                            <option value="">Yıl</option>
+                            @foreach (var year in years)
+                            {
+                                <option value="@year.Value">@year.Text</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group col-md-6">
+                <label>@T("Payment.CardCode")</label>
+                <input type="text" id="CardCode" name="CardCode" class="form-control" maxlength="4" required />
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var cardNumber = document.getElementById('CardNumber');
+    if (cardNumber) {
+        cardNumber.addEventListener('input', function(e) {
+            var value = e.target.value.replace(/\s/g, '');
+            var formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+            e.target.value = formattedValue;
+        });
+    }
+});
+</script>
