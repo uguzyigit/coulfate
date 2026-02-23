@@ -37,12 +37,22 @@ public class ProductViewTrackingFilter : IAsyncActionFilter
             !string.Equals(action, "ProductDetails", StringComparison.OrdinalIgnoreCase))
             return;
 
-        if (!context.ActionArguments.TryGetValue("productId", out var productIdObj) ||
-            productIdObj is not int productId || productId <= 0)
+        // NopCommerce passes productId via route values (lowercase "productid") through SlugRouteTransformer
+        int productId = 0;
+        if (context.ActionArguments.TryGetValue("productId", out var productIdObj) && productIdObj is int pid)
+        {
+            productId = pid;
+        }
+        else if (routeData.Values.TryGetValue("productid", out var routeVal) && int.TryParse(routeVal?.ToString(), out var rpid))
+        {
+            productId = rpid;
+        }
+
+        if (productId <= 0)
             return;
 
         var product = await _productService.GetProductByIdAsync(productId);
-        if (product == null || product.VendorId <= 0)
+        if (product == null)
             return;
 
         var customer = await _workContext.GetCurrentCustomerAsync();

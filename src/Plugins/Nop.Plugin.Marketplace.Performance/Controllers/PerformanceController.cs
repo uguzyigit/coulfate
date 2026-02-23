@@ -133,6 +133,17 @@ public class MarketplacePerformanceController : BasePluginController
             var snapshots = await _performanceService.GetAllAsync(0, 0, 25);
             var interactionCount = await _performanceService.GetDiagnosticCountsAsync();
 
+            // Diagnose product eligibility
+            var allVendorProducts = (await _productService.SearchProductsAsync(
+                pageIndex: 0, pageSize: int.MaxValue, vendorId: 0, visibleIndividuallyOnly: false))
+                .Where(p => !p.Deleted && p.Published)
+                .Select(p => new
+                {
+                    p.Id, p.Name, p.VendorId,
+                    p.ManageInventoryMethodId, p.StockQuantity,
+                    eligible = p.ManageInventoryMethodId == 0 || p.StockQuantity > 0
+                }).ToList();
+
             var sampleItems = new List<object>();
             foreach (var s in snapshots.Take(3))
             {
@@ -155,6 +166,12 @@ public class MarketplacePerformanceController : BasePluginController
                 userContext = new { isVendor, currentVendorId, isAdmin },
                 snapshotCount = snapshots.TotalCount,
                 interactionCount = interactionCount,
+                totalVendorProducts = allVendorProducts.Count,
+                eligibleProducts = allVendorProducts.Count(x => x.eligible),
+                excludedProducts = allVendorProducts.Where(x => !x.eligible).Select(x => new
+                {
+                    x.Id, x.Name, x.VendorId, x.ManageInventoryMethodId, x.StockQuantity
+                }),
                 sampleItems
             });
         }

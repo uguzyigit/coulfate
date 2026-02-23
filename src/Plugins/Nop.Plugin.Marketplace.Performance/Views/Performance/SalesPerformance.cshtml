@@ -103,7 +103,7 @@
             serverSide: true,
             ajax: {
                 url: '/Admin/MarketplacePerformance/SalesPerformanceData',
-                type: 'GET',
+                type: 'POST',
                 dataType: 'json',
                 data: function (d) {
                     if (isAdmin) {
@@ -114,6 +114,7 @@
                     }
                     d.pageIndex = d.start / d.length;
                     d.pageSize = d.length;
+                    addAntiForgeryToken(d);
                 },
                 dataSrc: function(json) {
                     return json && json.data ? json.data : [];

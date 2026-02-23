@@ -61,9 +61,9 @@ public class ProductPerformanceService : IProductPerformanceService
         var since30d = now.AddDays(-30);
         var since7d = now.AddDays(-7);
 
-        // 1. Get eligible vendor products (published, not deleted)
+        // 1. Get all eligible products (published, not deleted) — includes vendor and non-vendor products
         var products = await _productRepository.Table
-            .Where(p => p.VendorId > 0 && !p.Deleted && p.Published)
+            .Where(p => !p.Deleted && p.Published)
             .Select(p => new { p.Id, p.VendorId, p.ManageInventoryMethodId, p.StockQuantity, p.CreatedOnUtc })
             .ToListAsync();
 
@@ -88,70 +88,83 @@ public class ProductPerformanceService : IProductPerformanceService
         var interactionLookup = interactions.ToLookup(x => x.ProductId);
 
         // 3. Aggregate order data (paid orders, 30d)
+        // Fetch raw data first, then group in C# to avoid LinqToDB subquery alias issues on MySQL
         // PaymentStatusId == 30 means Paid
-        var paidOrderIds30d = _orderRepository.Table
-            .Where(o => o.PaymentStatusId == 30 && o.CreatedOnUtc >= since30d);
-
-        var orderItems30d = await (
+        var rawOrderItems30d = await (
             from oi in _orderItemRepository.Table
-            join o in paidOrderIds30d on oi.OrderId equals o.Id
-            group new { oi, o } by oi.ProductId into g
-            select new
+            join o in _orderRepository.Table on oi.OrderId equals o.Id
+            where o.PaymentStatusId == 30 && o.CreatedOnUtc >= since30d
+            select new { oi.ProductId, oi.OrderId, oi.Quantity, oi.PriceExclTax, oi.DiscountAmountExclTax }
+        ).ToListAsync();
+
+        var orderItems30d = rawOrderItems30d
+            .GroupBy(x => x.ProductId)
+            .Select(g => new
             {
                 ProductId = g.Key,
-                GrossOrders = g.Select(x => x.oi.OrderId).Distinct().Count(),
-                GrossQty = g.Sum(x => x.oi.Quantity),
-                GrossRevenue = g.Sum(x => x.oi.PriceExclTax),
-                DiscountAmount = g.Sum(x => x.oi.DiscountAmountExclTax)
-            }).ToListAsync();
+                GrossOrders = g.Select(x => x.OrderId).Distinct().Count(),
+                GrossQty = g.Sum(x => x.Quantity),
+                GrossRevenue = g.Sum(x => x.PriceExclTax),
+                DiscountAmount = g.Sum(x => x.DiscountAmountExclTax)
+            }).ToList();
 
         var orderLookup30d = orderItems30d.ToDictionary(x => x.ProductId);
 
         // 4. Aggregate 7d order data for trend
-        var paidOrderIds7d = _orderRepository.Table
-            .Where(o => o.PaymentStatusId == 30 && o.CreatedOnUtc >= since7d);
-
-        var orderItems7d = await (
+        var rawOrderItems7d = await (
             from oi in _orderItemRepository.Table
-            join o in paidOrderIds7d on oi.OrderId equals o.Id
-            group new { oi, o } by oi.ProductId into g
-            select new
+            join o in _orderRepository.Table on oi.OrderId equals o.Id
+            where o.PaymentStatusId == 30 && o.CreatedOnUtc >= since7d
+            select new { oi.ProductId, oi.OrderId, oi.PriceExclTax }
+        ).ToListAsync();
+
+        var orderItems7d = rawOrderItems7d
+            .GroupBy(x => x.ProductId)
+            .Select(g => new
             {
                 ProductId = g.Key,
-                Orders = g.Select(x => x.oi.OrderId).Distinct().Count(),
-                Revenue = g.Sum(x => x.oi.PriceExclTax)
-            }).ToListAsync();
+                Orders = g.Select(x => x.OrderId).Distinct().Count(),
+                Revenue = g.Sum(x => x.PriceExclTax)
+            }).ToList();
 
         var orderLookup7d = orderItems7d.ToDictionary(x => x.ProductId);
 
         // 5. Aggregate return requests (30d, statuses: Pending=10, Received=20, ReturnAuthorized=40)
-        var returnData = await (
+        var rawReturnData = await (
             from rr in _returnRequestRepository.Table
+            join oi in _orderItemRepository.Table on rr.OrderItemId equals oi.Id
             where rr.CreatedOnUtc >= since30d
                 && (rr.ReturnRequestStatusId == 10 || rr.ReturnRequestStatusId == 20 || rr.ReturnRequestStatusId == 40)
-            join oi in _orderItemRepository.Table on rr.OrderItemId equals oi.Id
-            group new { rr, oi } by oi.ProductId into g
-            select new
+            select new { oi.ProductId, rr.Quantity, oi.UnitPriceExclTax }
+        ).ToListAsync();
+
+        var returnData = rawReturnData
+            .GroupBy(x => x.ProductId)
+            .Select(g => new
             {
                 ProductId = g.Key,
-                ReturnQty = g.Sum(x => x.rr.Quantity),
-                ReturnRevenue = g.Sum(x => x.rr.Quantity * x.oi.UnitPriceExclTax)
-            }).ToListAsync();
+                ReturnQty = g.Sum(x => x.Quantity),
+                ReturnRevenue = g.Sum(x => x.Quantity * x.UnitPriceExclTax)
+            }).ToList();
 
         var returnLookup = returnData.ToDictionary(x => x.ProductId);
 
         // 6. Aggregate cancelled orders (30d, OrderStatusId == 40 means Cancelled)
-        var cancelData = await (
+        var rawCancelData = await (
             from oi in _orderItemRepository.Table
             join o in _orderRepository.Table on oi.OrderId equals o.Id
             where o.OrderStatusId == 40 && o.CreatedOnUtc >= since30d
-            group new { oi, o } by oi.ProductId into g
-            select new
+            select new { oi.ProductId, oi.Quantity, oi.PriceExclTax }
+        ).ToListAsync();
+
+        var cancelData = rawCancelData
+            .GroupBy(x => x.ProductId)
+            .Select(g => new
             {
                 ProductId = g.Key,
-                CancelQty = g.Sum(x => x.oi.Quantity),
-                CancelRevenue = g.Sum(x => x.oi.PriceExclTax)
-            }).ToListAsync();
+                CancelQty = g.Sum(x => x.Quantity),
+                CancelRevenue = g.Sum(x => x.PriceExclTax)
+            }).ToList();
 
         var cancelLookup = cancelData.ToDictionary(x => x.ProductId);
 

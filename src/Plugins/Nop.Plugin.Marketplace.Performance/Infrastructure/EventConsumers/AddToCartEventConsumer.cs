@@ -27,7 +27,7 @@ public class AddToCartEventConsumer : IConsumer<EntityInsertedEvent<ShoppingCart
             return;
 
         var product = await _productService.GetProductByIdAsync(item.ProductId);
-        if (product == null || product.VendorId <= 0)
+        if (product == null)
             return;
 
         var type = item.ShoppingCartType switch
