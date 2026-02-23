@@ -21,15 +21,16 @@ public class VendorMenuEventConsumer : IConsumer<AdminMenuCreatedEvent>
     // Desired menu order for vendor panel
     private static readonly string[] VendorMenuOrder = new[]
     {
-        "Catalog",           // Katalog
-        "Sales",             // Satış
-        "Promotions",        // Promosyonlar
-        "Vendor.Finance",    // Finans
-        "Accounting",        // Muhasebe (Parasut plugin)
-        "Shipping",          // Kargo Ayarları
-        "Vendor.Integration",// Urun Entegrasyonu
-        "Reports",           // Raporlar
-        "Help"               // Yardım
+        "Catalog",                  // Katalog
+        "Sales",                    // Satış
+        "Promotions",               // Promosyonlar
+        "Vendor.Finance",           // Finans
+        "Accounting",               // Muhasebe (Parasut plugin)
+        "Marketplace.Performance",  // Performans
+        "Reports",                  // Raporlar
+        "Shipping",                 // Kargo Ayarları
+        "Vendor.Integration",       // Urun Entegrasyonu
+        "Help"                      // Yardım
     };
 
     public VendorMenuEventConsumer(
