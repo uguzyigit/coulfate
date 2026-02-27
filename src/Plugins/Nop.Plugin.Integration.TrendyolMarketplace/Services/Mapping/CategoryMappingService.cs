@@ -253,6 +253,39 @@ public class CategoryMappingService : ICategoryMappingService
         return category?.NopCategoryId;
     }
 
+    /// <summary>
+    /// Gets the NopCommerce category ID by Trendyol category name (fallback when categoryId is not available from API)
+    /// </summary>
+    public virtual async Task<int?> GetNopCategoryIdByNameAsync(string trendyolCategoryName)
+    {
+        if (string.IsNullOrEmpty(trendyolCategoryName))
+            return null;
+
+        var key = _staticCacheManager.PrepareKeyForDefaultCache(
+            TrendyolDefaults.CategoryByNameCacheKey, trendyolCategoryName);
+
+        return await _staticCacheManager.GetAsync(key, async () =>
+        {
+            var searchName = trendyolCategoryName.ToLower().Trim();
+
+            // TrendyolCategory tablosunda isimle ara
+            var category = await (from c in _categoryRepository.Table
+                                  where c.TrendyolCategoryName.ToLower() == searchName &&
+                                        c.NopCategoryId.HasValue && c.NopCategoryId.Value > 0
+                                  select c).FirstOrDefaultAsync();
+
+            if (category != null)
+                return category.NopCategoryId;
+
+            // Bulunamazsa NopCommerce kategorilerinde direkt isimle ara
+            var nopCategories = await _nopCategoryService.GetAllCategoriesAsync(showHidden: true);
+            var nopCategory = nopCategories.FirstOrDefault(c =>
+                c.Name.ToLower().Trim() == searchName);
+
+            return nopCategory?.Id;
+        });
+    }
+
     #region Private Methods
 
     private void BuildCategoryPaths(

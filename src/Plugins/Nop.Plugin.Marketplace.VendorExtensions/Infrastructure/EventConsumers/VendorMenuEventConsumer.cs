@@ -25,11 +25,11 @@ public class VendorMenuEventConsumer : IConsumer<AdminMenuCreatedEvent>
         "Sales",                    // Satış
         "Promotions",               // Promosyonlar
         "Vendor.Finance",           // Finans
-        "Accounting",               // Muhasebe (Parasut plugin)
+        "Finance",                  // Muhasebe (Parasut plugin)
         "Marketplace.Performance",  // Performans
         "Reports",                  // Raporlar
-        "Shipping",                 // Kargo Ayarları
-        "Vendor.Integration",       // Urun Entegrasyonu
+        "Vendor.Shipping",          // Kargo Ayarları
+        "VendorPanel",              // Urun Entegrasyonu (Trendyol)
         "Help"                      // Yardım
     };
 

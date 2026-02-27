@@ -11,6 +11,7 @@ using Nop.Data.Mapping;
 using Nop.Plugin.Marketplace.Performance.Data;
 using Nop.Plugin.Marketplace.Performance.Services;
 using Nop.Services.Catalog;
+using Nop.Services.Logging;
 
 namespace Nop.Plugin.Marketplace.Performance.Infrastructure;
 
@@ -46,7 +47,8 @@ public class NopStartup : INopStartup
             services.AddScoped<IProductService>(sp => new PerformanceProductService(
                 (IProductService)sp.GetRequiredService(innerType),
                 sp.GetRequiredService<IRepository<ProductPerformanceSnapshot>>(),
-                sp.GetRequiredService<IRepository<Product>>()
+                sp.GetRequiredService<IRepository<Product>>(),
+                sp.GetRequiredService<ILogger>()
             ));
         }
     }

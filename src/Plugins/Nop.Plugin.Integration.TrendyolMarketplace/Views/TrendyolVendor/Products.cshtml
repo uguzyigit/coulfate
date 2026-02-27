@@ -124,7 +124,8 @@
             case 2:
                 return '<span class="badge bg-danger" title="' + (row.ImportMessage || '') + '">@T("Plugins.Integration.TrendyolMarketplace.ImportStatus.Failed")</span>';
             case 3:
-                return '<span class="badge bg-warning" title="' + (row.ImportMessage || '') + '">@T("Plugins.Integration.TrendyolMarketplace.ImportStatus.Skipped")</span>';
+                var msg = row.ImportMessage || '';
+                return '<span class="badge bg-warning">@T("Plugins.Integration.TrendyolMarketplace.ImportStatus.Skipped")</span>' + (msg ? '<br/><small class="text-muted">' + msg + '</small>' : '');
             default:
                 return data;
         }

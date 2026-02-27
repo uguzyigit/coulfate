@@ -8,6 +8,7 @@ using Nop.Core.Domain.Shipping;
 using Nop.Core.Domain.Stores;
 using Nop.Data;
 using Nop.Services.Catalog;
+using Nop.Services.Logging;
 
 namespace Nop.Plugin.Marketplace.Performance.Services;
 
@@ -16,15 +17,18 @@ public class PerformanceProductService : IProductService
     private readonly IProductService _inner;
     private readonly IRepository<ProductPerformanceSnapshot> _snapshotRepository;
     private readonly IRepository<Product> _productRepository;
+    private readonly ILogger _logger;
 
     public PerformanceProductService(
         IProductService inner,
         IRepository<ProductPerformanceSnapshot> snapshotRepo,
-        IRepository<Product> productRepo)
+        IRepository<Product> productRepo,
+        ILogger logger)
     {
         _inner = inner;
         _snapshotRepository = snapshotRepo;
         _productRepository = productRepo;
+        _logger = logger;
     }
 
     #region Products
@@ -97,9 +101,10 @@ public class PerformanceProductService : IProductService
                 searchManufacturerPartNumber, searchSku, searchProductTags, languageId,
                 filteredSpecOptions, ProductSortingEnum.Position, showHidden, overridePublished);
 
-            var filtered = allProducts
-                .Where(p => p.ManageInventoryMethodId == 0 || p.StockQuantity > 0)
-                .ToList();
+            // Admin (showHidden=true) → tüm ürünleri göster; Frontend → stoksuzları gizle
+            var filtered = showHidden
+                ? allProducts.ToList()
+                : allProducts.Where(p => !p.DisableBuyButton).ToList();
 
             var productIds = filtered.Select(p => p.Id).ToArray();
             var snapshots = await _snapshotRepository.Table
@@ -131,9 +136,10 @@ public class PerformanceProductService : IProductService
                 searchManufacturerPartNumber, searchSku, searchProductTags, languageId,
                 filteredSpecOptions, orderBy, showHidden, overridePublished);
 
-            var filtered = allProducts
-                .Where(p => p.ManageInventoryMethodId == 0 || p.StockQuantity > 0)
-                .ToList();
+            // Admin (showHidden=true) → tüm ürünleri göster; Frontend → stoksuzları gizle
+            var filtered = showHidden
+                ? allProducts.ToList()
+                : allProducts.Where(p => !p.DisableBuyButton).ToList();
 
             var paged = filtered.Skip(pageIndex * pageSize).Take(pageSize).ToList();
             return new PagedList<Product>(paged, pageIndex, pageSize, filtered.Count);

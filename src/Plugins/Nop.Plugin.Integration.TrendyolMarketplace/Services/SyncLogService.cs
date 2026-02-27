@@ -80,7 +80,8 @@ public class SyncLogService : ISyncLogService
     }
 
     /// <summary>
-    /// Checks if there is a running sync for a vendor
+    /// Checks if there is a running sync for a vendor.
+    /// Auto-expires syncs stuck in Running state for more than 30 minutes.
     /// </summary>
     public virtual async Task<bool> IsSyncRunningAsync(int? vendorId = null, SyncType? syncType = null)
     {
@@ -92,7 +93,31 @@ public class SyncLogService : ISyncLogService
         if (syncType.HasValue)
             query = query.Where(sl => sl.SyncType == syncType.Value);
 
-        return await query.AnyAsync();
+        var stuckSyncs = await query.ToListAsync();
+
+        if (!stuckSyncs.Any())
+            return false;
+
+        // 30 dakikadan uzun süre Running olan sync'leri otomatik Failed yap
+        var cutoff = DateTime.UtcNow.AddMinutes(-30);
+        var hasActive = false;
+
+        foreach (var sync in stuckSyncs)
+        {
+            if (sync.StartedOnUtc < cutoff)
+            {
+                sync.Status = SyncStatus.Failed;
+                sync.CompletedOnUtc = DateTime.UtcNow;
+                sync.ErrorMessage = "Timeout: 30 dakikadan uzun süre Running durumunda kaldı";
+                await _syncLogRepository.UpdateAsync(sync);
+            }
+            else
+            {
+                hasActive = true;
+            }
+        }
+
+        return hasActive;
     }
 
     /// <summary>

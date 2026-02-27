@@ -9,7 +9,8 @@ using Nop.Services.Logging;
 namespace Nop.Plugin.Integration.TrendyolMarketplace.Services.Sync;
 
 /// <summary>
-/// Stock synchronization service implementation
+/// Stock synchronization service
+/// Strategy: onSale=true bulk fetch + NopCommerce actual stock comparison
 /// </summary>
 public class StockSyncService : IStockSyncService
 {
@@ -49,15 +50,21 @@ public class StockSyncService : IStockSyncService
 
         try
         {
-            // Get all Trendyol products for this vendor that are imported
             var importedProducts = await GetImportedProductsAsync(credential.VendorId);
 
             if (!importedProducts.Any())
                 return (0, 0);
 
-            // Fetch current stock from Trendyol API (only onSale products)
+            // onSale=true ile satışta olanları çek (hızlı)
             var trendyolProducts = await _apiClient.GetAllProductsAsync(credential, approved: true, onSale: true);
-            var trendyolProductDict = trendyolProducts.ToDictionary(p => p.Barcode, p => p);
+
+            // Duplicate barcode'lara karşı güvenli dictionary oluştur
+            var trendyolProductDict = new Dictionary<string, Api.Models.TrendyolProductDto>();
+            foreach (var tp in trendyolProducts)
+            {
+                if (!string.IsNullOrEmpty(tp.Barcode))
+                    trendyolProductDict[tp.Barcode] = tp;
+            }
 
             var totalCount = importedProducts.Count;
 
@@ -65,59 +72,179 @@ public class StockSyncService : IStockSyncService
             {
                 try
                 {
+                    // NopCommerce ürünü var mı kontrol et
+                    if (!importedProduct.NopProductId.HasValue)
+                    {
+                        await _logger.WarningAsync($"[StockSync] {importedProduct.TrendyolBarcode}: NopProductId yok, atlanıyor");
+                        successCount++;
+                        await _syncLogService.UpdateProgressAsync(
+                            syncLogId, totalCount, successCount, failedCount, 0);
+                        continue;
+                    }
+
+                    var nopProduct = await _nopProductService.GetProductByIdAsync(importedProduct.NopProductId.Value);
+                    if (nopProduct == null || nopProduct.Deleted)
+                    {
+                        await _logger.WarningAsync($"[StockSync] {importedProduct.TrendyolBarcode}: NopProduct {importedProduct.NopProductId} bulunamadı/silinmiş, atlanıyor");
+                        successCount++;
+                        await _syncLogService.UpdateProgressAsync(
+                            syncLogId, totalCount, successCount, failedCount, 0);
+                        continue;
+                    }
+
+                    // Trendyol'dan stok bilgisi
+                    int newStock;
+                    bool foundInTrendyol;
                     if (trendyolProductDict.TryGetValue(importedProduct.TrendyolBarcode, out var trendyolProduct))
                     {
-                        // Track onSale status from API
-                        importedProduct.TrendyolOnSale = trendyolProduct.OnSale;
-
-                        // Use the actual stock from API (Trendyol handles onSale internally - quantity=0 when off sale)
-                        var newStock = trendyolProduct.Quantity;
-
-                        if (importedProduct.LastTrendyolStock != newStock)
-                        {
-                            var success = await SyncProductStockAsync(importedProduct, newStock);
-
-                            if (success)
-                            {
-                                // Update Trendyol product record
-                                importedProduct.LastTrendyolStock = newStock;
-                                importedProduct.LastSyncOnUtc = DateTime.UtcNow;
-                                importedProduct.UpdatedOnUtc = DateTime.UtcNow;
-                                await _productRepository.UpdateAsync(importedProduct);
-
-                                successCount++;
-                            }
-                            else
-                            {
-                                failedCount++;
-                            }
-                        }
-                        else
-                        {
-                            // Stock unchanged, just update sync time
-                            importedProduct.LastSyncOnUtc = DateTime.UtcNow;
-                            await _productRepository.UpdateAsync(importedProduct);
-                            successCount++;
-                        }
+                        importedProduct.TrendyolOnSale = true;
+                        newStock = trendyolProduct.Quantity;
+                        foundInTrendyol = true;
                     }
                     else
                     {
-                        // Product not found in Trendyol API - zero stock as safety measure
-                        await _logger.WarningAsync($"Product {importedProduct.TrendyolBarcode} not found in Trendyol API during stock sync - zeroing stock");
-                        if (importedProduct.LastTrendyolStock != 0)
-                        {
-                            var success = await SyncProductStockAsync(importedProduct, 0);
-                            if (success)
-                            {
-                                importedProduct.LastTrendyolStock = 0;
-                                importedProduct.TrendyolOnSale = false;
-                                importedProduct.LastSyncOnUtc = DateTime.UtcNow;
-                                importedProduct.UpdatedOnUtc = DateTime.UtcNow;
-                                await _productRepository.UpdateAsync(importedProduct);
-                            }
-                        }
-                        failedCount++;
+                        // onSale listesinde yok = stok 0
+                        importedProduct.TrendyolOnSale = false;
+                        newStock = 0;
+                        foundInTrendyol = false;
                     }
+
+                    // DEBUG: Her ürün için detaylı log
+                    await _logger.InformationAsync(
+                        $"[StockSync-Debug] {importedProduct.TrendyolBarcode}: " +
+                        $"NopProductId={importedProduct.NopProductId}, " +
+                        $"ManageInventory={nopProduct.ManageInventoryMethod} ({(int)nopProduct.ManageInventoryMethod}), " +
+                        $"NopStockQty={nopProduct.StockQuantity}, " +
+                        $"DisableBuyButton={nopProduct.DisableBuyButton}, " +
+                        $"TrendyolFound={foundInTrendyol}, NewStock={newStock}");
+
+                    // NopCommerce gerçek stoğunu oku
+                    var nopStock = GetCurrentNopStock(nopProduct, importedProduct.TrendyolBarcode);
+                    var expectedDisabled = newStock <= 0;
+
+                    // Variant ürünlerde toplam stok ile DisableBuyButton kararı
+                    if (nopProduct.ManageInventoryMethod == ManageInventoryMethod.ManageStockByAttributes)
+                    {
+                        var combinations = await _productAttributeService.GetAllProductAttributeCombinationsAsync(nopProduct.Id);
+                        var totalStock = combinations.Sum(c =>
+                            c.Sku == importedProduct.TrendyolBarcode ? newStock : c.StockQuantity);
+                        expectedDisabled = totalStock <= 0;
+
+                        var combination = combinations.FirstOrDefault(c => c.Sku == importedProduct.TrendyolBarcode);
+                        nopStock = combination?.StockQuantity ?? -1;
+
+                        await _logger.InformationAsync(
+                            $"[StockSync-Debug] {importedProduct.TrendyolBarcode}: VARIANT — " +
+                            $"CombinationFound={combination != null}, CombinationStock={nopStock}, " +
+                            $"TotalStock={totalStock}, ExpectedDisabled={expectedDisabled}, " +
+                            $"Combinations=[{string.Join(", ", combinations.Select(c => $"SKU={c.Sku}/Qty={c.StockQuantity}"))}]");
+
+                        // Güncelleme gerekiyor mu?
+                        if (nopStock == newStock && nopProduct.DisableBuyButton == expectedDisabled)
+                        {
+                            // Tutarlı — sadece sync zamanını güncelle
+                            importedProduct.LastTrendyolStock = newStock;
+                            importedProduct.LastSyncOnUtc = DateTime.UtcNow;
+                            await _productRepository.UpdateAsync(importedProduct);
+                            successCount++;
+                            await _syncLogService.UpdateProgressAsync(
+                                syncLogId, totalCount, successCount, failedCount, 0);
+                            continue;
+                        }
+
+                        // Güncelle
+                        if (combination != null)
+                        {
+                            combination.StockQuantity = newStock;
+                            await _productAttributeService.UpdateProductAttributeCombinationAsync(combination);
+                        }
+
+                        // Published yönetimi:
+                        // Stok=0 → gizle | Stok>0 VE daha önce sync kapatmışsa → tekrar aç
+                        if (expectedDisabled)
+                            nopProduct.Published = false;
+                        else if (nopProduct.DisableBuyButton)
+                            nopProduct.Published = true; // stok geri geldi, sync kapatmıştı → aç
+
+                        nopProduct.DisableBuyButton = expectedDisabled;
+                        nopProduct.DisableWishlistButton = expectedDisabled;
+                        nopProduct.UpdatedOnUtc = DateTime.UtcNow;
+                        await _nopProductService.UpdateProductAsync(nopProduct);
+                    }
+                    else if (nopProduct.ManageInventoryMethod == ManageInventoryMethod.ManageStock)
+                    {
+                        await _logger.InformationAsync(
+                            $"[StockSync-Debug] {importedProduct.TrendyolBarcode}: SIMPLE — " +
+                            $"NopStock={nopStock}, NewStock={newStock}, " +
+                            $"NeedsUpdate={nopStock != newStock || nopProduct.DisableBuyButton != expectedDisabled}");
+
+                        // Güncelleme gerekiyor mu?
+                        if (nopStock == newStock && nopProduct.DisableBuyButton == expectedDisabled)
+                        {
+                            // Tutarlı — sadece sync zamanını güncelle
+                            importedProduct.LastTrendyolStock = newStock;
+                            importedProduct.LastSyncOnUtc = DateTime.UtcNow;
+                            await _productRepository.UpdateAsync(importedProduct);
+                            successCount++;
+                            await _syncLogService.UpdateProgressAsync(
+                                syncLogId, totalCount, successCount, failedCount, 0);
+                            continue;
+                        }
+
+                        // Published yönetimi:
+                        // Stok=0 → gizle | Stok>0 VE daha önce sync kapatmışsa → tekrar aç
+                        if (expectedDisabled)
+                            nopProduct.Published = false;
+                        else if (nopProduct.DisableBuyButton)
+                            nopProduct.Published = true;
+
+                        // Güncelle
+                        nopProduct.StockQuantity = newStock;
+                        nopProduct.DisableBuyButton = expectedDisabled;
+                        nopProduct.DisableWishlistButton = expectedDisabled;
+                        nopProduct.UpdatedOnUtc = DateTime.UtcNow;
+                        await _nopProductService.UpdateProductAsync(nopProduct);
+                    }
+                    else
+                    {
+                        // ManageInventory = DontManage — stok yönetimi kapalı, doğrudan güncelle
+                        await _logger.WarningAsync(
+                            $"[StockSync-Debug] {importedProduct.TrendyolBarcode}: DontManageStock! " +
+                            $"NopProductId={nopProduct.Id}, StockQty={nopProduct.StockQuantity}. " +
+                            $"ManageStock olarak değiştirip stoğu güncelliyorum.");
+
+                        // ManageInventoryMethod'u ManageStock olarak değiştir
+                        nopProduct.ManageInventoryMethodId = (int)ManageInventoryMethod.ManageStock;
+                        nopProduct.StockQuantity = newStock;
+                        // Published: sadece stok 0'a düşerse gizle
+                        if (newStock <= 0)
+                            nopProduct.Published = false;
+                        else if (nopProduct.DisableBuyButton)
+                            nopProduct.Published = true;
+                        nopProduct.DisableBuyButton = (newStock <= 0);
+                        nopProduct.DisableWishlistButton = (newStock <= 0);
+                        nopProduct.UpdatedOnUtc = DateTime.UtcNow;
+                        await _nopProductService.UpdateProductAsync(nopProduct);
+
+                        importedProduct.LastTrendyolStock = newStock;
+                        importedProduct.LastSyncOnUtc = DateTime.UtcNow;
+                        importedProduct.UpdatedOnUtc = DateTime.UtcNow;
+                        await _productRepository.UpdateAsync(importedProduct);
+                        successCount++;
+                        await _syncLogService.UpdateProgressAsync(
+                            syncLogId, totalCount, successCount, failedCount, 0);
+                        continue;
+                    }
+
+                    await _logger.InformationAsync(
+                        $"[StockSync] {importedProduct.TrendyolBarcode}: stok {nopStock}→{newStock}, " +
+                        $"buyButton→{(expectedDisabled ? "disabled" : "enabled")}");
+
+                    importedProduct.LastTrendyolStock = newStock;
+                    importedProduct.LastSyncOnUtc = DateTime.UtcNow;
+                    importedProduct.UpdatedOnUtc = DateTime.UtcNow;
+                    await _productRepository.UpdateAsync(importedProduct);
+                    successCount++;
                 }
                 catch (Exception ex)
                 {
@@ -125,7 +252,6 @@ public class StockSyncService : IStockSyncService
                     failedCount++;
                 }
 
-                // Update sync progress
                 await _syncLogService.UpdateProgressAsync(
                     syncLogId, totalCount, successCount, failedCount, 0);
             }
@@ -140,7 +266,7 @@ public class StockSyncService : IStockSyncService
     }
 
     /// <summary>
-    /// Syncs stock for a single product
+    /// Syncs stock for a single product (used by other services)
     /// </summary>
     public virtual async Task<bool> SyncProductStockAsync(TrendyolProduct trendyolProduct, int newStock)
     {
@@ -150,19 +276,19 @@ public class StockSyncService : IStockSyncService
                 return false;
 
             var nopProduct = await _nopProductService.GetProductByIdAsync(trendyolProduct.NopProductId.Value);
-            if (nopProduct == null)
+            if (nopProduct == null || nopProduct.Deleted)
                 return false;
 
             if (nopProduct.ManageInventoryMethod == ManageInventoryMethod.ManageStock)
             {
-                // Simple product - update stock directly
                 nopProduct.StockQuantity = newStock;
+                nopProduct.DisableBuyButton = (newStock <= 0);
+                nopProduct.DisableWishlistButton = (newStock <= 0);
                 nopProduct.UpdatedOnUtc = DateTime.UtcNow;
                 await _nopProductService.UpdateProductAsync(nopProduct);
             }
             else if (nopProduct.ManageInventoryMethod == ManageInventoryMethod.ManageStockByAttributes)
             {
-                // Variant product - update the specific combination
                 var combinations = await _productAttributeService.GetAllProductAttributeCombinationsAsync(nopProduct.Id);
                 var combination = combinations.FirstOrDefault(c => c.Sku == trendyolProduct.TrendyolBarcode);
 
@@ -170,12 +296,21 @@ public class StockSyncService : IStockSyncService
                 {
                     combination.StockQuantity = newStock;
                     await _productAttributeService.UpdateProductAttributeCombinationAsync(combination);
+
+                    var totalStock = combinations.Sum(c => c.Sku == trendyolProduct.TrendyolBarcode ? newStock : c.StockQuantity);
+                    nopProduct.DisableBuyButton = (totalStock <= 0);
+                    nopProduct.DisableWishlistButton = (totalStock <= 0);
+                    nopProduct.UpdatedOnUtc = DateTime.UtcNow;
+                    await _nopProductService.UpdateProductAsync(nopProduct);
                 }
                 else
                 {
-                    await _logger.WarningAsync($"Combination not found for SKU {trendyolProduct.TrendyolBarcode} in product {nopProduct.Id}");
                     return false;
                 }
+            }
+            else
+            {
+                return false;
             }
 
             return true;
@@ -187,11 +322,20 @@ public class StockSyncService : IStockSyncService
         }
     }
 
+    private int GetCurrentNopStock(Nop.Core.Domain.Catalog.Product nopProduct, string barcode)
+    {
+        if (nopProduct.ManageInventoryMethod == ManageInventoryMethod.ManageStock)
+            return nopProduct.StockQuantity;
+
+        return -1;
+    }
+
     private async Task<IList<TrendyolProduct>> GetImportedProductsAsync(int vendorId)
     {
+        // NopProductId olan tüm ürünleri dahil et (Imported, Deactivated, Skipped)
+        // Skipped ürünler bile NopCommerce'de ürünü varsa stok güncellemesi almalı
         var query = from p in _productRepository.Table
                     where p.VendorId == vendorId &&
-                          p.ImportStatus == ImportStatus.Imported &&
                           p.NopProductId.HasValue
                     select p;
 

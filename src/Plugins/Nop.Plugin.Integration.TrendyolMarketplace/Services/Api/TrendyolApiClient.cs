@@ -218,7 +218,9 @@ public class TrendyolApiClient : ITrendyolApiClient
         response.EnsureSuccessStatusCode();
 
         var content = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<TrendyolProductsResponse>(content, _jsonOptions);
+        var result = JsonSerializer.Deserialize<TrendyolProductsResponse>(content, _jsonOptions);
+
+        return result;
     }
 
     /// <summary>

@@ -63,4 +63,9 @@ public interface ICategoryMappingService
     /// Gets the NopCommerce category ID for a Trendyol category
     /// </summary>
     Task<int?> GetNopCategoryIdAsync(long trendyolCategoryId);
+
+    /// <summary>
+    /// Gets the NopCommerce category ID by Trendyol category name (fallback when categoryId is not available from API)
+    /// </summary>
+    Task<int?> GetNopCategoryIdByNameAsync(string trendyolCategoryName);
 }

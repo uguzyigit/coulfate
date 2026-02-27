@@ -55,6 +55,11 @@ public static class TrendyolDefaults
     public static CacheKey CategoryByTrendyolIdCacheKey => new("Nop.trendyol.category.bytrendyolid-{0}");
 
     /// <summary>
+    /// Cache key for category by Trendyol category name
+    /// </summary>
+    public static CacheKey CategoryByNameCacheKey => new("Nop.trendyol.category.byname-{0}");
+
+    /// <summary>
     /// Cache key for all categories
     /// </summary>
     public static CacheKey AllCategoriesCacheKey => new("Nop.trendyol.category.all");

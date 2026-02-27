@@ -282,11 +282,21 @@ public class ProductImportService : IProductImportService
         if (string.IsNullOrEmpty(mainProduct.Title))
             await _logger.WarningAsync($"[TrendyolImport] Product '{mainProduct.Barcode}' has null/empty Title. StockCode={mainProduct.StockCode}, BrandName={mainProduct.BrandName}, BrandId={mainProduct.BrandId}");
 
-        // Check category mapping
-        var nopCategoryId = await _categoryMappingService.GetNopCategoryIdAsync(mainProduct.CategoryId);
+        // Check category mapping (ID bazlı, yoksa isim bazlı fallback)
+        var nopCategoryId = mainProduct.CategoryId > 0
+            ? await _categoryMappingService.GetNopCategoryIdAsync(mainProduct.CategoryId)
+            : null;
+
+        // CategoryId yoksa (API'den 0 geliyorsa) CategoryName ile dene
+        if (!nopCategoryId.HasValue && !string.IsNullOrEmpty(mainProduct.CategoryName))
+            nopCategoryId = await _categoryMappingService.GetNopCategoryIdByNameAsync(mainProduct.CategoryName);
+
         if (!nopCategoryId.HasValue && settings.SkipUnmappedCategories)
         {
-            var skipMessage = $"Category not mapped: Trendyol CategoryId={mainProduct.CategoryId}. Map this category or set SkipUnmappedCategories=false in plugin settings.";
+            var categoryInfo = mainProduct.CategoryId > 0
+                ? $"CategoryId={mainProduct.CategoryId}"
+                : $"CategoryName={mainProduct.CategoryName ?? "(empty)"}";
+            var skipMessage = $"Category not mapped: Trendyol {categoryInfo}. Map this category or set SkipUnmappedCategories=false in plugin settings.";
             await _logger.WarningAsync($"[TrendyolImport] Skipping product group '{mainProduct.Title}' (barcode: {mainProduct.Barcode}): {skipMessage}");
 
             // Save/update products as skipped (preserve onSale from API)
@@ -352,7 +362,7 @@ public class ProductImportService : IProductImportService
         if (existingMapping?.NopProductId > 0)
         {
             var existingProduct = await _nopProductService.GetProductByIdAsync(existingMapping.NopProductId.Value);
-            if (existingProduct != null)
+            if (existingProduct != null && !existingProduct.Deleted)
             {
                 // Update existing product
                 await UpdateNopProductAsync(existingProduct, productDto, settings);
@@ -362,6 +372,17 @@ public class ProductImportService : IProductImportService
                     await _specificationAttributeImportService.AssignSpecificationAttributesAsync(existingProduct.Id, productDto);
 
                 return existingProduct.Id;
+            }
+
+            // NopCommerce ürünü silinmiş (soft-delete) — mapping'i temizle, yeniden oluşturulsun
+            if (existingProduct != null && existingProduct.Deleted)
+            {
+                existingMapping.NopProductId = null;
+                existingMapping.NopParentProductId = null;
+                existingMapping.ImportStatus = ImportStatus.Pending;
+                existingMapping.ImportMessage = "NopCommerce product was deleted, re-importing";
+                existingMapping.UpdatedOnUtc = DateTime.UtcNow;
+                await _productRepository.UpdateAsync(existingMapping);
             }
         }
 
@@ -381,6 +402,8 @@ public class ProductImportService : IProductImportService
             OldPrice = productDto.ListPrice > productDto.SalePrice ? productDto.ListPrice : 0,
             StockQuantity = productDto.Quantity,
             ManageInventoryMethodId = (int)ManageInventoryMethod.ManageStock,
+            MinStockQuantity = 0,
+            LowStockActivityId = (int)LowStockActivity.DisableBuyButton,
             OrderMinimumQuantity = 1,
             OrderMaximumQuantity = 10000,
             Published = settings.PublishImportedProducts,
@@ -455,7 +478,7 @@ public class ProductImportService : IProductImportService
         if (existingMapping?.NopProductId > 0)
         {
             parentProduct = await _nopProductService.GetProductByIdAsync(existingMapping.NopProductId.Value);
-            if (parentProduct != null)
+            if (parentProduct != null && !parentProduct.Deleted)
             {
                 // Update existing product and variants
                 await UpdateNopProductAsync(parentProduct, mainProduct, settings);
@@ -466,6 +489,32 @@ public class ProductImportService : IProductImportService
                     await _specificationAttributeImportService.AssignSpecificationAttributesAsync(parentProduct.Id, mainProduct);
 
                 return parentProduct.Id;
+            }
+
+            // NopCommerce ürünü silinmiş (soft-delete) — mapping'i temizle, yeniden oluşturulsun
+            if (parentProduct != null && parentProduct.Deleted)
+            {
+                existingMapping.NopProductId = null;
+                existingMapping.NopParentProductId = null;
+                existingMapping.ImportStatus = ImportStatus.Pending;
+                existingMapping.ImportMessage = "NopCommerce product was deleted, re-importing";
+                existingMapping.UpdatedOnUtc = DateTime.UtcNow;
+                await _productRepository.UpdateAsync(existingMapping);
+
+                // Tüm variant mapping'leri de temizle
+                foreach (var variantProduct in products.Skip(1))
+                {
+                    var variantMapping = await GetByBarcodeAsync(variantProduct.Barcode, vendorId);
+                    if (variantMapping != null)
+                    {
+                        variantMapping.NopProductId = null;
+                        variantMapping.NopParentProductId = null;
+                        variantMapping.ImportStatus = ImportStatus.Pending;
+                        variantMapping.ImportMessage = "NopCommerce product was deleted, re-importing";
+                        variantMapping.UpdatedOnUtc = DateTime.UtcNow;
+                        await _productRepository.UpdateAsync(variantMapping);
+                    }
+                }
             }
         }
 
@@ -484,6 +533,8 @@ public class ProductImportService : IProductImportService
             OldPrice = products.Max(p => p.ListPrice),
             StockQuantity = 0, // Managed by combinations
             ManageInventoryMethodId = (int)ManageInventoryMethod.ManageStockByAttributes,
+            MinStockQuantity = 0,
+            LowStockActivityId = (int)LowStockActivity.DisableBuyButton,
             OrderMinimumQuantity = 1,
             OrderMaximumQuantity = 10000,
             Published = settings.PublishImportedProducts,
@@ -677,10 +728,10 @@ public class ProductImportService : IProductImportService
                 }
             }
 
-            // Deactivate in NopCommerce: unpublish + zero stock
+            // Deactivate in NopCommerce: zero stock + disable buy button
             await DeactivateNopProductAsync(product);
 
-            product.ImportStatus = ImportStatus.Deactivated;
+            // ImportStatus Imported olarak kalır — StockSyncService ürünü görmeye devam eder
             product.TrendyolOnSale = false;
             product.LastTrendyolStock = 0;
             product.UpdatedOnUtc = DateTime.UtcNow;
@@ -744,11 +795,13 @@ public class ProductImportService : IProductImportService
             return;
 
         var nopProduct = await _nopProductService.GetProductByIdAsync(trendyolProduct.NopProductId.Value);
-        if (nopProduct == null)
+        if (nopProduct == null || nopProduct.Deleted)
             return;
 
-        nopProduct.Published = false;
         nopProduct.StockQuantity = 0;
+        nopProduct.DisableBuyButton = true;
+        nopProduct.DisableWishlistButton = true;
+        // Published=true kalır — ürün görünür ama satın alınamaz
         nopProduct.UpdatedOnUtc = DateTime.UtcNow;
         await _nopProductService.UpdateProductAsync(nopProduct);
 
@@ -764,10 +817,12 @@ public class ProductImportService : IProductImportService
             return;
 
         var nopProduct = await _nopProductService.GetProductByIdAsync(trendyolProduct.NopProductId.Value);
-        if (nopProduct == null)
+        if (nopProduct == null || nopProduct.Deleted)
             return;
 
-        nopProduct.Published = settings.PublishImportedProducts;
+        nopProduct.Published = true;
+        nopProduct.DisableBuyButton = false;
+        nopProduct.DisableWishlistButton = false;
         nopProduct.Price = apiProduct.SalePrice;
         nopProduct.OldPrice = apiProduct.ListPrice > apiProduct.SalePrice ? apiProduct.ListPrice : 0;
         nopProduct.UpdatedOnUtc = DateTime.UtcNow;
@@ -789,7 +844,7 @@ public class ProductImportService : IProductImportService
             return;
 
         var nopProduct = await _nopProductService.GetProductByIdAsync(trendyolProduct.NopProductId.Value);
-        if (nopProduct == null)
+        if (nopProduct == null || nopProduct.Deleted)
             return;
 
         if (nopProduct.ManageInventoryMethod == ManageInventoryMethod.ManageStockByAttributes)
