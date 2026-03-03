@@ -1,0 +1,168 @@
+@model Nop.Plugin.Marketplace.VendorExtensions.Models.VendorProductModel
+
+@using Nop.Web.Areas.Admin.Models.Catalog
+@using Nop.Web.Framework.Models
+
+<script>
+    $(function() {
+        $("#@Html.IdFor(model => model.IsTaxExempt)").click(toggleTax);
+        toggleTax();
+    });
+
+    function toggleTax() {
+        if ($('#@Html.IdFor(model => model.IsTaxExempt)').is(':checked')) {
+            $('#pnlTaxCategory').hideElement();
+        } else {
+            $('#pnlTaxCategory').showElement();
+        }
+    }
+</script>
+<div class="card-body">
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="Price" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="Price" asp-postfix="@Model.PrimaryStoreCurrencyCode" asp-required="true" />
+            <span asp-validation-for="Price"></span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="OldPrice" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="OldPrice" asp-postfix="@Model.PrimaryStoreCurrencyCode" html-attributes='@(new { @readonly = "readonly" })' />
+            <span class="form-text text-muted">Eski fiyat, fiyat değiştiğinde otomatik güncellenir.</span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <div class="label-wrapper"><label class="col-form-label">İndirimler</label><div title="Bu ürüne uygulanacak indirimleri seçin. Birden fazla indirim seçebilirsiniz." data-toggle="tooltip" class="ico-help"><i class="fas fa-circle-question"></i></div></div>
+        </div>
+        <div class="col-md-9">
+            <nop-select asp-for="SelectedDiscountIds" asp-items="Model.AvailableDiscounts" asp-multiple="true" />
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="IsTaxExempt" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="IsTaxExempt" />
+            <span asp-validation-for="IsTaxExempt"></span>
+        </div>
+    </div>
+    <div class="form-group row" id="pnlTaxCategory">
+        <div class="col-md-3">
+            <nop-label asp-for="TaxCategoryId" />
+        </div>
+        <div class="col-md-9">
+            <nop-select asp-for="TaxCategoryId" asp-items="Model.AvailableTaxCategories" />
+            <span asp-validation-for="TaxCategoryId"></span>
+        </div>
+    </div>
+
+    @if (Model.Id > 0)
+    {
+        <!-- Tier Prices -->
+        <div class="card card-default">
+            <div class="card-header">
+                Katman Fiyatları
+            </div>
+            <div class="card-body">
+                @await Html.PartialAsync("Table", new DataTablesModel
+                {
+                    Name = "tierprices-grid",
+                    UrlRead = new DataUrl("TierPriceList", "VendorProduct", new RouteValueDictionary { [nameof(Model.TierPriceSearchModel.ProductId)] = Model.TierPriceSearchModel.ProductId }),
+                    UrlDelete = new DataUrl("TierPriceDelete", "VendorProduct", null),
+                    UrlUpdate = new DataUrl("TierPriceEdit", "VendorProduct", null),
+                    Length = Model.TierPriceSearchModel.PageSize,
+                    LengthMenu = Model.TierPriceSearchModel.AvailablePageSizes,
+                    ColumnCollection = new List<ColumnProperty>
+                    {
+                        new ColumnProperty(nameof(TierPriceModel.Quantity))
+                        {
+                            Title = "Miktar",
+                            Width = "100",
+                            Editable = true,
+                            EditType = EditType.Number
+                        },
+                        new ColumnProperty(nameof(TierPriceModel.Price))
+                        {
+                            Title = "Fiyat",
+                            Width = "100",
+                            Editable = true,
+                            EditType = EditType.Number
+                        },
+                        new ColumnProperty(nameof(TierPriceModel.Id))
+                        {
+                            Title = "Düzenle",
+                            Width = "100",
+                            ClassName = NopColumnClassDefaults.Button,
+                            Render = new RenderButtonsInlineEdit()
+                        },
+                        new ColumnProperty(nameof(TierPriceModel.Id))
+                        {
+                            Title = "Sil",
+                            Width = "80",
+                            Render = new RenderButtonRemove("Sil"),
+                            ClassName = NopColumnClassDefaults.Button
+                        }
+                    }
+                })
+
+                <div class="card card-default">
+                    <div class="card-header">Yeni Katman Fiyatı Ekle</div>
+                    <div class="card-body">
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <label>Miktar</label>
+                            </div>
+                            <div class="col-md-9">
+                                <input type="number" id="tp-quantity" class="form-control" value="1" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <label>Fiyat</label>
+                            </div>
+                            <div class="col-md-9">
+                                <input type="number" step="0.01" id="tp-price" class="form-control" value="0" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-9 offset-md-3">
+                                <button type="button" id="addTierPrice" class="btn btn-primary">Katman Fiyatı Ekle</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                    $(function() {
+                        $('#addTierPrice').click(function() {
+                            var postData = {
+                                ProductId: @Model.Id,
+                                Quantity: parseInt($('#tp-quantity').val()),
+                                Price: parseFloat($('#tp-price').val()),
+                                StoreId: 0,
+                                CustomerRoleId: 0
+                            };
+                            addAntiForgeryToken(postData);
+                            $.ajax({
+                                type: 'POST',
+                                url: '@Url.Action("TierPriceCreate", "VendorProduct")',
+                                data: postData,
+                                success: function(data) {
+                                    if (data.result) {
+                                        updateTable('#tierprices-grid');
+                                    }
+                                }
+                            });
+                        });
+                    });
+                </script>
+            </div>
+        </div>
+    }
+</div>

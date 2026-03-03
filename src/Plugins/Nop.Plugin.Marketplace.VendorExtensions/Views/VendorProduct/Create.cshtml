@@ -1,0 +1,30 @@
+@model Nop.Plugin.Marketplace.VendorExtensions.Models.VendorProductModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = "Yeni Ürün Ekle";
+    NopHtml.SetActiveMenuItemSystemName("Vendor.ProductCatalog.AddNew");
+}
+
+<form asp-controller="VendorProduct" asp-action="Create" method="post" id="product-form">
+    <div class="content-header clearfix">
+        <h1 class="float-left">
+            Yeni Ürün Ekle
+            <small>
+                <i class="fas fa-arrow-circle-left"></i>
+                <a asp-action="List">Ürün Listesine Dön</a>
+            </small>
+        </h1>
+        <div class="float-right">
+            <button type="submit" name="save" class="btn btn-primary">
+                <i class="far fa-floppy-disk"></i>
+                Kaydet
+            </button>
+            <button type="submit" name="save-continue" class="btn btn-primary">
+                <i class="far fa-floppy-disk"></i>
+                Kaydet ve Düzenlemeye Devam Et
+            </button>
+        </div>
+    </div>
+    @await Html.PartialAsync("~/Plugins/Marketplace.VendorExtensions/Views/VendorProduct/_CreateOrUpdate.cshtml", Model)
+</form>

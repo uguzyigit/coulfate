@@ -1,0 +1,66 @@
+@model Nop.Plugin.Marketplace.VendorExtensions.Models.VendorProductModel
+
+@inject Nop.Services.Common.IGenericAttributeService genericAttributeService
+@inject Nop.Core.IWorkContext workContext
+
+@{
+    var customer = await workContext.GetCurrentCustomerAsync();
+
+    const string hideInfoBlockAttributeName = "VendorProductPage.HideInfoBlock";
+    var hideInfoBlock = await genericAttributeService.GetAttributeAsync<bool>(customer, hideInfoBlockAttributeName);
+
+    const string hidePricesBlockAttributeName = "VendorProductPage.HidePricesBlock";
+    var hidePricesBlock = await genericAttributeService.GetAttributeAsync<bool>(customer, hidePricesBlockAttributeName);
+
+    const string hideShippingBlockAttributeName = "VendorProductPage.HideShippingBlock";
+    var hideShippingBlock = await genericAttributeService.GetAttributeAsync<bool>(customer, hideShippingBlockAttributeName);
+
+    const string hideInventoryBlockAttributeName = "VendorProductPage.HideInventoryBlock";
+    var hideInventoryBlock = await genericAttributeService.GetAttributeAsync<bool>(customer, hideInventoryBlockAttributeName);
+
+    const string hideMultimediaBlockAttributeName = "VendorProductPage.HideMultimediaBlock";
+    var hideMultimediaBlock = await genericAttributeService.GetAttributeAsync<bool>(customer, hideMultimediaBlockAttributeName);
+
+    const string hideAttributesBlockAttributeName = "VendorProductPage.HideAttributesBlock";
+    var hideAttributesBlock = await genericAttributeService.GetAttributeAsync<bool>(customer, hideAttributesBlockAttributeName, defaultValue: true);
+
+    const string hideSpecAttributesBlockAttributeName = "VendorProductPage.HideSpecAttributesBlock";
+    var hideSpecAttributesBlock = await genericAttributeService.GetAttributeAsync<bool>(customer, hideSpecAttributesBlockAttributeName, defaultValue: true);
+}
+
+<div asp-validation-summary="All"></div>
+<input asp-for="Id" type="hidden" />
+<input asp-for="LastStockQuantity" type="hidden" />
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="form-horizontal">
+            <nop-cards id="vendor-product-cards">
+                <nop-card asp-name="product-info" asp-icon="fas fa-info" asp-title="Ürün Bilgisi" asp-hide-block-attribute-name="@hideInfoBlockAttributeName" asp-hide="@hideInfoBlock" asp-advanced="false">
+                    @await Html.PartialAsync("~/Plugins/Marketplace.VendorExtensions/Views/VendorProduct/_CreateOrUpdate.Info.cshtml", Model)
+                </nop-card>
+                <nop-card asp-name="product-price" asp-icon="fas fa-dollar-sign" asp-title="Fiyatlar" asp-hide-block-attribute-name="@hidePricesBlockAttributeName" asp-hide="@hidePricesBlock" asp-advanced="false">
+                    @await Html.PartialAsync("~/Plugins/Marketplace.VendorExtensions/Views/VendorProduct/_CreateOrUpdate.Prices.cshtml", Model)
+                </nop-card>
+                <nop-card asp-name="product-shipping" asp-icon="fas fa-truck" asp-title="Kargo" asp-hide-block-attribute-name="@hideShippingBlockAttributeName" asp-hide="@hideShippingBlock" asp-advanced="false">
+                    @await Html.PartialAsync("~/Plugins/Marketplace.VendorExtensions/Views/VendorProduct/_CreateOrUpdate.Shipping.cshtml", Model)
+                </nop-card>
+                <nop-card asp-name="product-inventory" asp-icon="fas fa-sitemap" asp-title="Stok" asp-hide-block-attribute-name="@hideInventoryBlockAttributeName" asp-hide="@hideInventoryBlock" asp-advanced="false">
+                    @await Html.PartialAsync("~/Plugins/Marketplace.VendorExtensions/Views/VendorProduct/_CreateOrUpdate.Inventory.cshtml", Model)
+                </nop-card>
+                @if (Model.Id > 0)
+                {
+                    <nop-card asp-name="product-multimedia" asp-icon="fas fa-photo-film" asp-title="Çoklu Ortam" asp-hide-block-attribute-name="@hideMultimediaBlockAttributeName" asp-hide="@hideMultimediaBlock" asp-advanced="false">
+                        @await Html.PartialAsync("~/Plugins/Marketplace.VendorExtensions/Views/VendorProduct/_CreateOrUpdate.Multimedia.cshtml", Model)
+                    </nop-card>
+                    <nop-card asp-name="product-attributes" asp-icon="fas fa-paperclip" asp-title="Ürün Nitelikleri" asp-hide-block-attribute-name="@hideAttributesBlockAttributeName" asp-hide="@hideAttributesBlock" asp-advanced="false">
+                        @await Html.PartialAsync("~/Plugins/Marketplace.VendorExtensions/Views/VendorProduct/_CreateOrUpdate.ProductAttributes.cshtml", Model)
+                    </nop-card>
+                    <nop-card asp-name="product-spec-attributes" asp-icon="fas fa-gear" asp-title="Belirtim Nitelikleri" asp-hide-block-attribute-name="@hideSpecAttributesBlockAttributeName" asp-hide="@hideSpecAttributesBlock" asp-advanced="false">
+                        @await Html.PartialAsync("~/Plugins/Marketplace.VendorExtensions/Views/VendorProduct/_CreateOrUpdate.SpecAttributes.cshtml", Model)
+                    </nop-card>
+                }
+            </nop-cards>
+        </div>
+    </div>
+</section>

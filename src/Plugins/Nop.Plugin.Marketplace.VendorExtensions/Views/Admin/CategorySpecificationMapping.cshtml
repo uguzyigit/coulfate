@@ -1,0 +1,135 @@
+@model Nop.Plugin.Marketplace.VendorExtensions.Components.CategorySpecMappingModel
+
+<div class="card card-secondary card-outline no-shadow" id="category-spec-mapping">
+    <div class="card-header with-border">
+        <div class="card-title">
+            <i class="fas fa-tags"></i>
+            Belirtim Nitelikleri Eşleştirme
+        </div>
+        <div class="card-tools">
+            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <i class="fas fa-minus"></i>
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">
+            Bu kategoriye ait belirtim niteliklerini tanımlayın. Satıcılar bu kategoriden ürün eklediğinde,
+            tanımlanan belirtim nitelikleri otomatik olarak ürüne eklenecektir.
+        </p>
+
+        <!-- Add form -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <select id="catSpecAttr-specId" class="form-control">
+                    <option value="0">-- Belirtim Niteliği Seçin --</option>
+                    @foreach (var item in Model.AvailableSpecificationAttributes)
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="number" id="catSpecAttr-displayOrder" class="form-control" value="0" placeholder="Sıralama" />
+            </div>
+            <div class="col-md-3">
+                <button type="button" id="catSpecAttr-addBtn" class="btn btn-primary btn-block">
+                    <i class="fas fa-plus"></i> Ekle
+                </button>
+            </div>
+        </div>
+
+        <!-- Existing mappings table -->
+        <table class="table table-bordered table-hover" id="catSpecAttr-table">
+            <thead>
+                <tr>
+                    <th>Belirtim Niteliği</th>
+                    <th style="width: 120px;">Sıralama</th>
+                    <th style="width: 80px;">Sil</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Mappings.Any())
+                {
+                    @foreach (var mapping in Model.Mappings)
+                    {
+                        <tr data-id="@mapping.Id">
+                            <td>@mapping.SpecificationAttributeName</td>
+                            <td class="text-center">@mapping.DisplayOrder</td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-danger btn-sm catSpecAttr-deleteBtn" data-id="@mapping.Id">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr id="catSpecAttr-nodata">
+                        <td colspan="3" class="text-center text-muted">Henüz eşleştirme yapılmamış.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script asp-location="Footer">
+    $(function () {
+        var categoryId = @Model.CategoryId;
+
+        // Add mapping
+        $('#catSpecAttr-addBtn').on('click', function () {
+            var specId = parseInt($('#catSpecAttr-specId').val());
+            var displayOrder = parseInt($('#catSpecAttr-displayOrder').val()) || 0;
+
+            if (specId <= 0) {
+                alert('Lütfen bir belirtim niteliği seçin.');
+                return;
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: '@Url.Action("Add", "CategorySpecMapping")',
+                data: addAntiForgeryToken({
+                    categoryId: categoryId,
+                    specificationAttributeId: specId,
+                    displayOrder: displayOrder
+                }),
+                success: function (result) {
+                    if (result.success) {
+                        location.reload();
+                    } else {
+                        alert(result.message || 'Hata oluştu.');
+                    }
+                },
+                error: function () {
+                    alert('Hata oluştu.');
+                }
+            });
+        });
+
+        // Delete mapping
+        $(document).on('click', '.catSpecAttr-deleteBtn', function () {
+            var id = $(this).data('id');
+            if (!confirm('Bu eşleştirmeyi silmek istediğinize emin misiniz?')) return;
+
+            $.ajax({
+                type: 'POST',
+                url: '@Url.Action("Delete", "CategorySpecMapping")',
+                data: addAntiForgeryToken({ id: id }),
+                success: function (result) {
+                    if (result.success) {
+                        location.reload();
+                    } else {
+                        alert(result.message || 'Hata oluştu.');
+                    }
+                },
+                error: function () {
+                    alert('Hata oluştu.');
+                }
+            });
+        });
+    });
+</script>

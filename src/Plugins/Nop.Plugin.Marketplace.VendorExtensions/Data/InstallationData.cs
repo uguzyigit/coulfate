@@ -49,9 +49,30 @@ CREATE TABLE IF NOT EXISTS `MarketplaceVendorTransaction` (
     KEY `IX_MarketplaceVendorTransaction_CreatedOnUtc` (`CreatedOnUtc` DESC),
     CONSTRAINT `FK_MarketplaceVendorTransaction_Vendor` FOREIGN KEY (`VendorId`) REFERENCES `Vendor` (`Id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `MarketplaceCategorySpecificationAttribute` (
+    `Id` int NOT NULL AUTO_INCREMENT,
+    `CategoryId` int NOT NULL,
+    `SpecificationAttributeId` int NOT NULL,
+    `DisplayOrder` int NOT NULL DEFAULT 0,
+    PRIMARY KEY (`Id`),
+    UNIQUE KEY `IX_CatSpecAttr_Cat_Spec` (`CategoryId`, `SpecificationAttributeId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+";
+
+    public const string CreateCategorySpecAttrTableScript = @"
+CREATE TABLE IF NOT EXISTS `MarketplaceCategorySpecificationAttribute` (
+    `Id` int NOT NULL AUTO_INCREMENT,
+    `CategoryId` int NOT NULL,
+    `SpecificationAttributeId` int NOT NULL,
+    `DisplayOrder` int NOT NULL DEFAULT 0,
+    PRIMARY KEY (`Id`),
+    UNIQUE KEY `IX_CatSpecAttr_Cat_Spec` (`CategoryId`, `SpecificationAttributeId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ";
 
     public const string DropTablesScript = @"
+DROP TABLE IF EXISTS `MarketplaceCategorySpecificationAttribute`;
 DROP TABLE IF EXISTS `MarketplaceVendorTransaction`;
 DROP TABLE IF EXISTS `MarketplaceVendorCurrentAccount`;
 DROP TABLE IF EXISTS `MarketplaceVendorSettings`;

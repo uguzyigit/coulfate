@@ -1,3 +1,4 @@
+using Marketplace.Abstractions.Domain;
 using Nop.Data.Mapping;
 using Nop.Plugin.Integration.TrendyolMarketplace.Domain;
 
@@ -28,7 +29,8 @@ public class TrendyolNameCompatibility : INameCompatibility
         { typeof(TrendyolAttribute), "TrendyolAttribute" },
         { typeof(TrendyolAttributeValue), "TrendyolAttributeValue" },
         { typeof(TrendyolProduct), "TrendyolProduct" },
-        { typeof(TrendyolSyncLog), "TrendyolSyncLog" }
+        { typeof(TrendyolSyncLog), "TrendyolSyncLog" },
+        { typeof(CategorySpecificationAttribute), "MarketplaceCategorySpecificationAttribute" }
     };
 
     /// <summary>

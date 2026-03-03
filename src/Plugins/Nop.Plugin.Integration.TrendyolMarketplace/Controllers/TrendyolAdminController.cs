@@ -42,6 +42,8 @@ public class TrendyolAdminController : BasePluginController
     private readonly IManufacturerService _manufacturerService;
     private readonly IProductImportService _productImportService;
     private readonly INopDataProvider _dataProvider;
+    private readonly ICategoryNopImportService _categoryNopImportService;
+    private readonly IAttributeNopImportService _attributeNopImportService;
 
     public TrendyolAdminController(
         ISettingService settingService,
@@ -58,7 +60,9 @@ public class TrendyolAdminController : BasePluginController
         ICategoryService categoryService,
         IManufacturerService manufacturerService,
         IProductImportService productImportService,
-        INopDataProvider dataProvider)
+        INopDataProvider dataProvider,
+        ICategoryNopImportService categoryNopImportService,
+        IAttributeNopImportService attributeNopImportService)
     {
         _settingService = settingService;
         _localizationService = localizationService;
@@ -75,6 +79,8 @@ public class TrendyolAdminController : BasePluginController
         _manufacturerService = manufacturerService;
         _productImportService = productImportService;
         _dataProvider = dataProvider;
+        _categoryNopImportService = categoryNopImportService;
+        _attributeNopImportService = attributeNopImportService;
     }
 
     #region Configuration
@@ -303,6 +309,43 @@ public class TrendyolAdminController : BasePluginController
                 string.Format(await _localizationService.GetResourceAsync("Plugins.Integration.TrendyolMarketplace.Message.CategorySyncCompleted"), syncCount));
 
             return Json(new { success = true, message = $"Synced {syncCount} categories, auto-mapped {mappedCount}" });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ImportCategoriesToNopCommerce()
+    {
+        if (!await _permissionService.AuthorizeAsync(StandardPermission.Configuration.MANAGE_PLUGINS))
+            return AccessDeniedView();
+
+        try
+        {
+            var count = await _categoryNopImportService.ImportCategoriesAsync();
+            return Json(new { success = true, message = $"{count} kategori oluşturuldu" });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ImportAttributesToNopCommerce()
+    {
+        if (!await _permissionService.AuthorizeAsync(StandardPermission.Configuration.MANAGE_PLUGINS))
+            return AccessDeniedView();
+
+        try
+        {
+            var (productAttrCount, specAttrCount, remaining) = await _attributeNopImportService.ImportAttributesAsync();
+            var message = $"{productAttrCount} ürün attribute, {specAttrCount} özellik attribute oluşturuldu";
+            if (remaining > 0)
+                message += $" ({remaining} kategori kaldı, tekrar çalıştırın)";
+            return Json(new { success = true, message, remaining });
         }
         catch (Exception ex)
         {

@@ -3,33 +3,61 @@ using System.Linq;
 using System.Threading.Tasks;
 using Nop.Core;
 using Nop.Data;
+using Nop.Plugin.Marketplace.VendorExtensions.Components;
+using Nop.Plugin.Marketplace.VendorExtensions.Data;
+using Nop.Core.Domain.Cms;
+using Nop.Services.Cms;
 using Nop.Services.Configuration;
 using Nop.Services.Localization;
 using Nop.Services.Plugins;
-using Nop.Plugin.Marketplace.VendorExtensions.Data;
+using Nop.Web.Framework.Infrastructure;
 
 namespace Nop.Plugin.Marketplace.VendorExtensions;
 
-public class VendorExtensionsPlugin : BasePlugin
+public class VendorExtensionsPlugin : BasePlugin, IWidgetPlugin
 {
     private readonly IWebHelper _webHelper;
     private readonly ISettingService _settingService;
     private readonly ILocalizationService _localizationService;
     private readonly ILanguageService _languageService;
     private readonly INopDataProvider _dataProvider;
+    private readonly WidgetSettings _widgetSettings;
 
     public VendorExtensionsPlugin(
         IWebHelper webHelper,
         ISettingService settingService,
         ILocalizationService localizationService,
         ILanguageService languageService,
-        INopDataProvider dataProvider)
+        INopDataProvider dataProvider,
+        WidgetSettings widgetSettings)
     {
         _webHelper = webHelper;
         _settingService = settingService;
         _localizationService = localizationService;
         _languageService = languageService;
         _dataProvider = dataProvider;
+        _widgetSettings = widgetSettings;
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether to hide this plugin on the widget list page in the admin area
+    /// </summary>
+    public bool HideInWidgetList => true;
+
+    /// <summary>
+    /// Gets widget zones where this widget should be rendered
+    /// </summary>
+    public Task<IList<string>> GetWidgetZonesAsync()
+    {
+        return Task.FromResult<IList<string>>(new List<string> { AdminWidgetZones.CategoryDetailsBlock });
+    }
+
+    /// <summary>
+    /// Gets a type of a view component for displaying widget
+    /// </summary>
+    public Type GetWidgetViewComponent(string widgetZone)
+    {
+        return typeof(CategorySpecificationMappingViewComponent);
     }
 
     public override string GetConfigurationPageUrl()
@@ -245,11 +273,25 @@ public class VendorExtensionsPlugin : BasePlugin
             }, turkishLanguage.Id);
         }
 
+        // Activate widget
+        if (!_widgetSettings.ActiveWidgetSystemNames.Contains(PluginDescriptor.SystemName))
+        {
+            _widgetSettings.ActiveWidgetSystemNames.Add(PluginDescriptor.SystemName);
+            await _settingService.SaveSettingAsync(_widgetSettings);
+        }
+
         await base.InstallAsync();
     }
 
     public override async Task UninstallAsync()
     {
+        // Deactivate widget
+        if (_widgetSettings.ActiveWidgetSystemNames.Contains(PluginDescriptor.SystemName))
+        {
+            _widgetSettings.ActiveWidgetSystemNames.Remove(PluginDescriptor.SystemName);
+            await _settingService.SaveSettingAsync(_widgetSettings);
+        }
+
         await _localizationService.DeleteLocaleResourcesAsync("Plugins.Marketplace.VendorExtensions");
         await base.UninstallAsync();
     }

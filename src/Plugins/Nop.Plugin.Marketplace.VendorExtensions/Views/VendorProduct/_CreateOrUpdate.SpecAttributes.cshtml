@@ -1,0 +1,83 @@
+@model Nop.Plugin.Marketplace.VendorExtensions.Models.VendorProductModel
+
+@using Nop.Web.Areas.Admin.Models.Catalog
+@using Nop.Web.Framework.Models
+
+<div class="card-body">
+    @if (Model.Id > 0)
+    {
+        @await Html.PartialAsync("Table", new DataTablesModel
+        {
+            Name = "productspecattributes-grid",
+            UrlRead = new DataUrl("ProductSpecAttrList", "VendorProduct", new RouteValueDictionary { [nameof(Model.ProductSpecificationAttributeSearchModel.ProductId)] = Model.ProductSpecificationAttributeSearchModel.ProductId }),
+            UrlDelete = new DataUrl("ProductSpecAttrDelete", "VendorProduct", new RouteValueDictionary { ["productId"] = Model.Id }),
+            Length = Model.ProductSpecificationAttributeSearchModel.PageSize,
+            LengthMenu = Model.ProductSpecificationAttributeSearchModel.AvailablePageSizes,
+            ColumnCollection = new List<ColumnProperty>
+            {
+                new ColumnProperty(nameof(ProductSpecificationAttributeModel.AttributeName))
+                {
+                    Title = "Nitelik",
+                    Width = "200"
+                },
+                new ColumnProperty(nameof(ProductSpecificationAttributeModel.ValueRaw))
+                {
+                    Title = "Değer",
+                    Width = "300",
+                    Encode = false
+                },
+                new ColumnProperty(nameof(ProductSpecificationAttributeModel.DisplayOrder))
+                {
+                    Title = "Sıra",
+                    Width = "100",
+                    ClassName = NopColumnClassDefaults.CenterAll
+                },
+                new ColumnProperty(nameof(ProductSpecificationAttributeModel.Id))
+                {
+                    Title = "Düzenle",
+                    Width = "100",
+                    ClassName = NopColumnClassDefaults.Button,
+                    Render = new RenderCustom("renderSpecEditButton")
+                },
+                new ColumnProperty(nameof(ProductSpecificationAttributeModel.Id))
+                {
+                    Title = "Sil",
+                    Width = "100",
+                    Render = new RenderButtonRemove("Sil"),
+                    ClassName = NopColumnClassDefaults.Button
+                }
+            }
+        })
+        <script>
+            function renderSpecEditButton(data, type, row) {
+                var url = '@Url.Action("ProductSpecAttrAddOrEditPopup", "VendorProduct")?productId=@Model.Id&specificationId=' + data + '&btnId=btnRefreshSpecAttrs&formId=product-form';
+                return '<a class="btn btn-default btn-sm" onclick="javascript:OpenWindow(\'' + url + '\', 800, 500, true); return false;" href="#">Düzenle</a>';
+            }
+        </script>
+
+        <div style="background-color: #f8f9fa; padding: 10px; margin-top: 5px;">
+            <button type="submit" id="btnAddNewSpecAttr"
+                    onclick="javascript:OpenWindow('@(Url.Action("ProductSpecAttrAddOrEditPopup", "VendorProduct", new { productId = Model.Id, btnId = "btnRefreshSpecAttrs", formId = "product-form" }))', 800, 500, true); return false;"
+                    class="btn btn-primary">
+                <i class="fas fa-plus-square"></i> Nitelik ekle
+            </button>
+            <button type="submit" id="btnRefreshSpecAttrs" style="display:none"></button>
+        </div>
+        <script>
+            $(function() {
+                $('#btnRefreshSpecAttrs').click(function() {
+                    updateTable('#productspecattributes-grid');
+                    return false;
+                });
+            });
+        </script>
+    }
+    else
+    {
+        <div class="card card-default">
+            <div class="card-body">
+                Belirtim niteliği eklemek için önce ürünü kaydedin.
+            </div>
+        </div>
+    }
+</div>

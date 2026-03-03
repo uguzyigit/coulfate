@@ -1,0 +1,245 @@
+@model Nop.Plugin.Marketplace.VendorExtensions.Models.VendorProductListModel
+
+@using Nop.Web.Framework.Models
+@using Nop.Web.Areas.Admin.Models.Catalog
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = "Ürünler";
+    NopHtml.SetActiveMenuItemSystemName("Vendor.ProductCatalog.Products");
+}
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        Ürünler
+    </h1>
+    <div class="float-right">
+        <a asp-controller="VendorProduct" asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-square-plus"></i>
+            Yeni Ürün Ekle
+        </a>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="form-horizontal">
+            <!-- Dashboard Cards -->
+            <div class="row" id="dashboard-cards">
+                <div class="col-lg col-md-6 col-sm-6 col-12">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h3 id="stat-total">-</h3>
+                            <p>Toplam Ürünler</p>
+                        </div>
+                        <div class="icon"><i class="fas fa-boxes-stacked"></i></div>
+                    </div>
+                </div>
+                <div class="col-lg col-md-6 col-sm-6 col-12">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3 id="stat-approved">-</h3>
+                            <p>Onaylanan Ürünler</p>
+                        </div>
+                        <div class="icon"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                </div>
+                <div class="col-lg col-md-6 col-sm-6 col-12">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3 id="stat-pending">-</h3>
+                            <p>Onay Bekleyen</p>
+                        </div>
+                        <div class="icon"><i class="fas fa-clock"></i></div>
+                    </div>
+                </div>
+                <div class="col-lg col-md-6 col-sm-6 col-12">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h3 id="stat-outofstock">-</h3>
+                            <p>Tükenen Ürünler</p>
+                        </div>
+                        <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    </div>
+                </div>
+                <div class="col-lg col-md-6 col-sm-6 col-12">
+                    <div class="small-box" style="background-color: #20c997; color: white;">
+                        <div class="inner">
+                            <h3 id="stat-active">-</h3>
+                            <p>Satıştaki Ürünler</p>
+                        </div>
+                        <div class="icon"><i class="fas fa-shopping-cart"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div class="cards-group">
+                <div class="card card-default card-search">
+                    <div class="card-body">
+                        <div class="row align-items-end">
+                            <div class="col">
+                                <div class="form-group mb-0">
+                                    <label class="mb-1">Ürün Adı</label>
+                                    <input type="text" id="SearchProductName" class="form-control" />
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group mb-0">
+                                    <label class="mb-1">Kategori</label>
+                                    <select id="SearchCategoryId" class="form-control">
+                                        @foreach (var cat in Model.AvailableCategories)
+                                        {
+                                            <option value="@cat.Value">@cat.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group mb-0">
+                                    <label class="mb-1">Marka</label>
+                                    <select id="SearchManufacturerId" class="form-control">
+                                        @foreach (var man in Model.AvailableManufacturers)
+                                        {
+                                            <option value="@man.Value">@man.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group mb-0">
+                                    <label class="mb-1">Ürün Durumu</label>
+                                    <select id="SearchPublishedId" class="form-control">
+                                        @foreach (var pub in Model.AvailablePublishedOptions)
+                                        {
+                                            <option value="@pub.Value">@pub.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <div class="form-group mb-0">
+                                    <label class="mb-1">&nbsp;</label>
+                                    <button type="button" id="search-products" class="btn btn-primary btn-search btn-block">
+                                        <i class="fas fa-magnifying-glass"></i>
+                                        Ara
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Grid -->
+            <div class="cards-group">
+                <div class="card card-default">
+                    <div class="card-body">
+                        @await Html.PartialAsync("Table", new DataTablesModel
+                        {
+                            Name = "vendorproducts-grid",
+                            UrlRead = new DataUrl("ProductListData", "VendorProduct", null),
+                            SearchButtonId = "search-products",
+                            Length = Model.PageSize,
+                            LengthMenu = Model.AvailablePageSizes,
+                            Filters = new List<FilterParameter>
+                            {
+                                new FilterParameter("SearchProductName"),
+                                new FilterParameter("SearchCategoryId"),
+                                new FilterParameter("SearchManufacturerId"),
+                                new FilterParameter("SearchPublishedId")
+                            },
+                            ColumnCollection = new List<ColumnProperty>
+                            {
+                                new ColumnProperty("PictureUrl")
+                                {
+                                    Title = "Resim",
+                                    Width = "100",
+                                    Render = new RenderCustom("renderProductPicture"),
+                                    ClassName = "text-center"
+                                },
+                                new ColumnProperty("Name")
+                                {
+                                    Title = "Ürün Adı",
+                                    Width = "300"
+                                },
+                                new ColumnProperty("Sku")
+                                {
+                                    Title = "Stok Kodu",
+                                    Width = "150"
+                                },
+                                new ColumnProperty("Price")
+                                {
+                                    Title = "Fiyat",
+                                    Width = "100",
+                                    Render = new RenderCustom("renderPrice"),
+                                    ClassName = "text-right"
+                                },
+                                new ColumnProperty("StockQuantity")
+                                {
+                                    Title = "Stok",
+                                    Width = "80",
+                                    ClassName = NopColumnClassDefaults.CenterAll
+                                },
+                                new ColumnProperty("Published")
+                                {
+                                    Title = "Yayınlandı",
+                                    Width = "80",
+                                    Render = new RenderBoolean(),
+                                    ClassName = NopColumnClassDefaults.CenterAll
+                                },
+                                new ColumnProperty("Id")
+                                {
+                                    Title = "Düzenle",
+                                    Width = "80",
+                                    ClassName = NopColumnClassDefaults.Button,
+                                    Render = new RenderCustom("renderEditButton")
+                                }
+                            }
+                        })
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script asp-location="Footer">
+    // Load dashboard stats
+    $(function () {
+        $.ajax({
+            type: 'POST',
+            url: '@Url.Action("DashboardStats", "VendorProduct")',
+            data: addAntiForgeryToken({}),
+            success: function (data) {
+                console.log('DashboardStats response:', JSON.stringify(data));
+                $('#stat-total').text(data.TotalProducts || 0);
+                $('#stat-approved').text(data.ApprovedProducts || 0);
+                $('#stat-pending').text(data.PendingApproval || 0);
+                $('#stat-outofstock').text(data.OutOfStockProducts || 0);
+                $('#stat-active').text(data.ActiveProducts || 0);
+            },
+            error: function (xhr, status, error) {
+                console.error('DashboardStats error:', status, error, xhr.responseText);
+            }
+        });
+    });
+
+    function renderProductPicture(data, type, row) {
+        if (data) {
+            return '<img src="' + data + '" width="75" />';
+        }
+        return '<i class="fas fa-image fa-2x text-muted"></i>';
+    }
+
+    function renderPrice(data, type, row) {
+        if (data !== undefined && data !== null) {
+            return parseFloat(data).toFixed(2);
+        }
+        return '-';
+    }
+
+    function renderEditButton(data, type, row) {
+        return '<a class="btn btn-default" href="@Url.Action("Edit", "VendorProduct")/' + data + '"><i class="fas fa-pencil"></i> Düzenle</a>';
+    }
+</script>

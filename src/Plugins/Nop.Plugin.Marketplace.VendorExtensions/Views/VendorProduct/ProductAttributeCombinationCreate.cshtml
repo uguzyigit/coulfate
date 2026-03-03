@@ -1,0 +1,113 @@
+@model Nop.Web.Areas.Admin.Models.Catalog.ProductAttributeCombinationModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = "Nitelik Kombinasyonu Ekle";
+}
+
+<form asp-controller="VendorProduct" asp-action="ProductAttributeCombinationCreate" asp-route-productId="@Model.ProductId" method="post">
+    <div class="content-header clearfix">
+        <h1 class="float-left">
+            Nitelik Kombinasyonu Ekle
+            <small>
+                <i class="fas fa-arrow-circle-left"></i>
+                <a asp-controller="VendorProduct" asp-action="Edit" asp-route-id="@Model.ProductId">Ürüne Dön</a>
+            </small>
+        </h1>
+        <div class="float-right">
+            <button type="submit" name="save" class="btn btn-primary">
+                <i class="far fa-floppy-disk"></i>
+                Kaydet
+            </button>
+        </div>
+    </div>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="form-horizontal">
+                <div class="cards-group">
+                    <div class="card card-default">
+                        <div class="card-body">
+                            <!-- Attribute Selectors -->
+                            @if (Model.ProductAttributes != null)
+                            {
+                                foreach (var attribute in Model.ProductAttributes)
+                                {
+                                    <div class="form-group row">
+                                        <div class="col-md-3">
+                                            <label>@attribute.Name</label>
+                                        </div>
+                                        <div class="col-md-9">
+                                            @if (attribute.Values != null && attribute.Values.Any())
+                                            {
+                                                <select name="product_attribute_@(attribute.Id)" class="form-control">
+                                                    <option value="">---</option>
+                                                    @foreach (var val in attribute.Values)
+                                                    {
+                                                        <option value="@val.Id">@val.Name</option>
+                                                    }
+                                                </select>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+
+                            <hr />
+
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="StockQuantity" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="StockQuantity" />
+                                    <span asp-validation-for="StockQuantity"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="Sku" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="Sku" />
+                                    <span asp-validation-for="Sku"></span>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="ManufacturerPartNumber" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="ManufacturerPartNumber" />
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="Gtin" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="Gtin" />
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <div class="label-wrapper"><label class="col-form-label">Geçersiz Kılınan Fiyat</label><div title="Bu kombinasyon için ana ürün fiyatını geçersiz kılacak özel bir fiyat belirleyin." data-toggle="tooltip" class="ico-help"><i class="fas fa-circle-question"></i></div></div>
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="OverriddenPrice" />
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <div class="label-wrapper"><label class="col-form-label">Minimum Stok Miktarı</label><div title="Bu kombinasyon için minimum stok seviyesini belirleyin." data-toggle="tooltip" class="ico-help"><i class="fas fa-circle-question"></i></div></div>
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="MinStockQuantity" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</form>

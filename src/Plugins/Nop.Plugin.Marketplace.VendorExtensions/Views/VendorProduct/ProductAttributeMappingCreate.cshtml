@@ -1,0 +1,53 @@
+@model Nop.Web.Areas.Admin.Models.Catalog.ProductAttributeMappingModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = "Ürün Niteliği Ekle";
+}
+
+<form asp-controller="VendorProduct" asp-action="ProductAttributeMappingCreate" method="post">
+    <div class="content-header clearfix">
+        <h1 class="float-left">
+            Ürün Niteliği Ekle
+            <small>
+                <i class="fas fa-arrow-circle-left"></i>
+                <a asp-controller="VendorProduct" asp-action="Edit" asp-route-id="@Model.ProductId">Ürüne Dön</a>
+            </small>
+        </h1>
+        <div class="float-right">
+            <button type="submit" name="save" class="btn btn-primary">
+                <i class="far fa-floppy-disk"></i>
+                Kaydet
+            </button>
+        </div>
+    </div>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="form-horizontal">
+                <div class="cards-group">
+                    <div class="card card-default">
+                        <div class="card-body">
+                            <input type="hidden" asp-for="ProductId" />
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <div class="label-wrapper"><label class="col-form-label">Nitelik</label><div title="Ürüne eklenecek niteliği seçin (örn: Renk, Beden)." data-toggle="tooltip" class="ico-help"><i class="fas fa-circle-question"></i></div></div>
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-select asp-for="ProductAttributeId" asp-items="Model.AvailableProductAttributes" />
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <div class="label-wrapper"><label class="col-form-label">Görüntüleme Sırası</label><div title="Niteliğin ürün sayfasında görüntülenme sırasını belirleyin." data-toggle="tooltip" class="ico-help"><i class="fas fa-circle-question"></i></div></div>
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="DisplayOrder" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</form>

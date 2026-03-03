@@ -90,6 +90,20 @@
                                 @T("Plugins.Integration.TrendyolMarketplace.Dashboard.LastBrandSync"): @(Model.LastBrandSyncOnDisplay ?? T("Plugins.Integration.TrendyolMarketplace.Dashboard.Never").Text)
                             </small>
                         </div>
+
+                        <hr />
+                        <h6 class="text-muted"><i class="fas fa-database"></i> NopCommerce Import</h6>
+                        <div class="btn-group-vertical w-100">
+                            <button type="button" class="btn btn-outline-success btn-block text-left" id="btnImportCategoriesToNop">
+                                <i class="fas fa-sitemap"></i> Kategorileri NopCommerce'e Aktar
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-block text-left" id="btnImportAttributesToNop">
+                                <i class="fas fa-tags"></i> Attribute'ları NopCommerce'e Aktar
+                            </button>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">Önce kategori senkronizasyonu, sonra import işlemi yapın.</small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -260,6 +274,93 @@
                     btn.prop('disabled', false).html('<i class="fas fa-sync-alt"></i> @T("Plugins.Integration.TrendyolMarketplace.Button.SyncBrands")');
                 }
             });
+        });
+
+        $('#btnImportCategoriesToNop').click(function () {
+            var btn = $(this);
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> İçe aktarılıyor...');
+
+            $.ajax({
+                url: '@Url.Action("ImportCategoriesToNopCommerce", "TrendyolAdmin")',
+                type: 'POST',
+                headers: { 'RequestVerificationToken': token },
+                data: { __RequestVerificationToken: token },
+                success: function (data) {
+                    if (data.success) {
+                        displayBarNotification(data.message, 0, 5000);
+                    } else {
+                        displayBarNotification(data.message, 1, 0);
+                    }
+                },
+                error: function () {
+                    displayBarNotification('@T("Plugins.Integration.TrendyolMarketplace.Dashboard.ErrorOccurred")', 1, 0);
+                },
+                complete: function () {
+                    btn.prop('disabled', false).html('<i class="fas fa-sitemap"></i> Kategorileri NopCommerce\'e Aktar');
+                }
+            });
+        });
+
+        var attrImportRunning = false;
+
+        function runAttrImportBatch() {
+            $.ajax({
+                url: '@Url.Action("ImportAttributesToNopCommerce", "TrendyolAdmin")',
+                type: 'POST',
+                headers: { 'RequestVerificationToken': token },
+                data: { __RequestVerificationToken: token },
+                success: function (data) {
+                    if (data.success) {
+                        if (data.remaining > 0) {
+                            $('#btnImportAttributesToNop').html(
+                                '<i class="fas fa-spinner fa-spin"></i> ' + data.remaining + ' kategori kaldı... (Durdurmak için tıkla)');
+                            if (attrImportRunning)
+                                setTimeout(runAttrImportBatch, 500);
+                            else
+                                finishAttrImport(data.message);
+                        } else {
+                            attrImportRunning = false;
+                            finishAttrImport(data.message);
+                            displayBarNotification(data.message, 0, 5000);
+                        }
+                    } else {
+                        attrImportRunning = false;
+                        finishAttrImport(data.message);
+                        displayBarNotification(data.message, 1, 0);
+                    }
+                },
+                error: function (jqXHR) {
+                    attrImportRunning = false;
+                    var errMsg = '@T("Plugins.Integration.TrendyolMarketplace.Dashboard.ErrorOccurred")';
+                    try {
+                        var resp = JSON.parse(jqXHR.responseText);
+                        if (resp && resp.message) errMsg = resp.message;
+                    } catch (e) {
+                        if (jqXHR.responseText && jqXHR.responseText.length < 300)
+                            errMsg = jqXHR.responseText;
+                    }
+                    finishAttrImport(null);
+                    displayBarNotification(errMsg, 1, 0);
+                }
+            });
+        }
+
+        function finishAttrImport(message) {
+            var btn = $('#btnImportAttributesToNop');
+            btn.prop('disabled', false).html('<i class="fas fa-tags"></i> Attribute\'ları NopCommerce\'e Aktar');
+            if (message) displayBarNotification(message, 0, 5000);
+        }
+
+        $('#btnImportAttributesToNop').click(function () {
+            if (attrImportRunning) {
+                // User clicked to stop
+                attrImportRunning = false;
+                $(this).html('<i class="fas fa-spinner fa-spin"></i> Durduruluyor...');
+                return;
+            }
+            attrImportRunning = true;
+            $(this).prop('disabled', false).html('<i class="fas fa-spinner fa-spin"></i> İçe aktarılıyor... (Durdurmak için tıkla)');
+            runAttrImportBatch();
         });
     });
 </script>

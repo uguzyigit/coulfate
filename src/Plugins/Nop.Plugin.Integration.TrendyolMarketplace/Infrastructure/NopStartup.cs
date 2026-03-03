@@ -45,6 +45,8 @@ public class NopStartup : INopStartup
         services.AddScoped<IImageImportService, ImageImportService>();
         services.AddScoped<IVariantService, VariantService>();
         services.AddScoped<ISpecificationAttributeImportService, SpecificationAttributeImportService>();
+        services.AddScoped<ICategoryNopImportService, CategoryNopImportService>();
+        services.AddScoped<IAttributeNopImportService, AttributeNopImportService>();
 
         // Register sync services
         services.AddScoped<IStockSyncService, StockSyncService>();

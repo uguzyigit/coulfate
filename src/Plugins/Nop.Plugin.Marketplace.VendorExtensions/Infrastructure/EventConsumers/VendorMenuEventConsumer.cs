@@ -21,7 +21,7 @@ public class VendorMenuEventConsumer : IConsumer<AdminMenuCreatedEvent>
     // Desired menu order for vendor panel
     private static readonly string[] VendorMenuOrder = new[]
     {
-        "Catalog",                  // Katalog
+        "Vendor.ProductCatalog",    // Ürün Katalogu (yeni)
         "Sales",                    // Satış
         "Promotions",               // Promosyonlar
         "Vendor.Finance",           // Finans
@@ -100,6 +100,43 @@ public class VendorMenuEventConsumer : IConsumer<AdminMenuCreatedEvent>
             Title = "Komisyon Oranları",
             Url = eventMessage.GetMenuItemUrl("VendorExtensions", "CommissionRates"),
             IconClass = "fas fa-percentage",
+            Visible = true
+        });
+
+        // Remove standard "Catalog" menu for vendors
+        var catalogNode = root.GetItemBySystemName("Catalog");
+        if (catalogNode != null)
+            root.ChildNodes.Remove(catalogNode);
+
+        // Create "Ürün Katalogu" menu for vendors
+        var productCatalogNode = root.GetItemBySystemName("Vendor.ProductCatalog");
+        if (productCatalogNode == null)
+        {
+            productCatalogNode = new AdminMenuItem
+            {
+                SystemName = "Vendor.ProductCatalog",
+                Title = "Ürün Katalogu",
+                IconClass = "fas fa-cube",
+                Visible = true
+            };
+            root.ChildNodes.Add(productCatalogNode);
+        }
+
+        AddIfMissing(productCatalogNode, new AdminMenuItem
+        {
+            SystemName = "Vendor.ProductCatalog.Products",
+            Title = "Ürünler",
+            Url = eventMessage.GetMenuItemUrl("VendorProduct", "List"),
+            IconClass = "far fa-dot-circle",
+            Visible = true
+        });
+
+        AddIfMissing(productCatalogNode, new AdminMenuItem
+        {
+            SystemName = "Vendor.ProductCatalog.AddNew",
+            Title = "Yeni Ürün Ekle",
+            Url = eventMessage.GetMenuItemUrl("VendorProduct", "Create"),
+            IconClass = "far fa-dot-circle",
             Visible = true
         });
 

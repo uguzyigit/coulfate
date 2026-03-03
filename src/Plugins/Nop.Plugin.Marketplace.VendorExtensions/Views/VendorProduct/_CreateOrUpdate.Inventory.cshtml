@@ -1,0 +1,151 @@
+@model Nop.Plugin.Marketplace.VendorExtensions.Models.VendorProductModel
+
+<script>
+    $(function() {
+        $("#@Html.IdFor(model => model.ManageInventoryMethodId)").change(toggleInventory);
+        $("#@Html.IdFor(model => model.UseMultipleWarehouses)").click(toggleInventory);
+        toggleInventory();
+    });
+
+    function toggleInventory() {
+        var val = parseInt($("#@Html.IdFor(model => model.ManageInventoryMethodId)").val());
+        if (val === 1) {
+            // ManageStock
+            $('#pnlUseMultipleWarehouses').showElement();
+
+            if ($('#@Html.IdFor(model => model.UseMultipleWarehouses)').is(':checked')) {
+                $('#pnlWarehouse').hideElement();
+                $('#pnlMultipleWarehouses').showElement();
+                $('#pnlStockQuantity').hideElement();
+            } else {
+                $('#pnlWarehouse').showElement();
+                $('#pnlMultipleWarehouses').hideElement();
+                $('#pnlStockQuantity').showElement();
+            }
+
+            $('#pnlAllowedQuantities').showElement();
+        } else if (val === 2) {
+            // ManageStockByAttributes
+            $('#pnlStockQuantity').hideElement();
+            $('#pnlUseMultipleWarehouses').showElement();
+
+            if ($('#@Html.IdFor(model => model.UseMultipleWarehouses)').is(':checked')) {
+                $('#pnlWarehouse').hideElement();
+                $('#pnlMultipleWarehouses').showElement();
+            } else {
+                $('#pnlWarehouse').showElement();
+                $('#pnlMultipleWarehouses').hideElement();
+            }
+
+            $('#pnlAllowedQuantities').showElement();
+        } else {
+            // DontManageStock
+            $('#pnlStockQuantity').hideElement();
+            $('#pnlWarehouse').hideElement();
+            $('#pnlUseMultipleWarehouses').hideElement();
+            $('#pnlMultipleWarehouses').hideElement();
+            $('#pnlAllowedQuantities').showElement();
+        }
+    }
+</script>
+
+<div class="card-body">
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="ManageInventoryMethodId" />
+        </div>
+        <div class="col-md-9">
+            <nop-select asp-for="ManageInventoryMethodId" asp-items="Model.AvailableManageInventoryMethods" />
+            <span asp-validation-for="ManageInventoryMethodId"></span>
+        </div>
+    </div>
+    <div class="form-group row" id="pnlStockQuantity">
+        <div class="col-md-3">
+            <nop-label asp-for="StockQuantity" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="StockQuantity" asp-required="true" />
+            <span asp-validation-for="StockQuantity"></span>
+        </div>
+    </div>
+    <div class="form-group row" id="pnlWarehouse">
+        <div class="col-md-3">
+            <nop-label asp-for="WarehouseId" />
+        </div>
+        <div class="col-md-9">
+            <nop-select asp-for="WarehouseId" asp-items="Model.AvailableWarehouses" />
+            <span asp-validation-for="WarehouseId"></span>
+        </div>
+    </div>
+    <div class="form-group row" id="pnlUseMultipleWarehouses">
+        <div class="col-md-3">
+            <nop-label asp-for="UseMultipleWarehouses" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="UseMultipleWarehouses" />
+            <span asp-validation-for="UseMultipleWarehouses"></span>
+        </div>
+    </div>
+    <div class="form-group row" id="pnlMultipleWarehouses">
+        <div class="col-md-12" style="overflow-x: auto;">
+            @if (Model.ProductWarehouseInventoryModels.Count > 0)
+            {
+                <table class="table table-hover table-bordered text-center">
+                    <thead>
+                        <tr>
+                            <th>Depo</th>
+                            <th>Kullanılıyor</th>
+                            <th>Stok Miktarı</th>
+                            <th>Rezerve Miktar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.ProductWarehouseInventoryModels)
+                        {
+                            <tr>
+                                <td style="width: 36%;">
+                                    <div style="padding-left: 10px; padding-right: 10px;">
+                                        @item.WarehouseName
+                                    </div>
+                                </td>
+                                <td style="width: 16%;">
+                                    <input type="checkbox" id="warehouse_used_@(item.WarehouseId)" name="warehouse_used_@(item.WarehouseId)" value="@item.WarehouseId" @(item.WarehouseUsed ? "checked" : "") />
+                                    <script>
+                                        $(function () {
+                                            $("#warehouse_used_@(item.WarehouseId)").change(toggleWarehouseUsed_@(item.WarehouseId));
+                                            toggleWarehouseUsed_@(item.WarehouseId)();
+                                        });
+                                        function toggleWarehouseUsed_@(item.WarehouseId)() {
+                                            if ($('#warehouse_used_@(item.WarehouseId)').is(':checked')) {
+                                                $('#warehouse_qty_@(item.WarehouseId)').prop('disabled', false);
+                                                $('#warehouse_reserved_@(item.WarehouseId)').prop('disabled', false);
+                                            } else {
+                                                $('#warehouse_qty_@(item.WarehouseId)').prop('disabled', true);
+                                                $('#warehouse_reserved_@(item.WarehouseId)').prop('disabled', true);
+                                            }
+                                        }
+                                    </script>
+                                </td>
+                                <td style="width: 24%;">
+                                    <input id="warehouse_qty_@(item.WarehouseId)" name="warehouse_qty_@(item.WarehouseId)" type="number" value="@item.StockQuantity" class="form-control" />
+                                </td>
+                                <td style="width: 24%;">
+                                    <input id="warehouse_reserved_@(item.WarehouseId)" name="warehouse_reserved_@(item.WarehouseId)" type="number" value="@item.ReservedQuantity" class="form-control" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+    <div class="form-group row" id="pnlAllowedQuantities">
+        <div class="col-md-3">
+            <nop-label asp-for="AllowedQuantities" />
+        </div>
+        <div class="col-md-9">
+            <nop-editor asp-for="AllowedQuantities" />
+            <span asp-validation-for="AllowedQuantities"></span>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,299 @@
+@model Nop.Plugin.Marketplace.VendorExtensions.Models.VendorProductModel
+
+@using Nop.Web.Areas.Admin.Models.Catalog
+@using Nop.Web.Framework.Models
+
+<div class="card-body">
+    @if (Model.Id > 0)
+    {
+        <nop-tabs id="vendorproductmultimedia-edit" asp-tab-name-to-select="tab-pictures" asp-render-selected-tab-input="false">
+            <nop-tab asp-name="tab-pictures" asp-title="Resimler" asp-default="true">
+                <!-- Pictures Grid -->
+                @await Html.PartialAsync("Table", new DataTablesModel
+                {
+                    Name = "productpictures-grid",
+                    UrlRead = new DataUrl("ProductPictureList", "VendorProduct", new RouteValueDictionary { [nameof(Model.ProductPictureSearchModel.ProductId)] = Model.ProductPictureSearchModel.ProductId }),
+                    UrlDelete = new DataUrl("ProductPictureDelete", "VendorProduct", null),
+                    UrlUpdate = new DataUrl("ProductPictureUpdate", "VendorProduct", null),
+                    Length = Model.ProductPictureSearchModel.PageSize,
+                    LengthMenu = Model.ProductPictureSearchModel.AvailablePageSizes,
+                    ColumnCollection = new List<ColumnProperty>
+                    {
+                        new ColumnProperty(nameof(ProductPictureModel.PictureUrl))
+                        {
+                            Title = "Resim",
+                            Render = new RenderCustom("renderPictureColumn"),
+                            ClassName = "text-center preview"
+                        },
+                        new ColumnProperty(nameof(ProductPictureModel.DisplayOrder))
+                        {
+                            Title = "Görüntüleme Sırası",
+                            Width = "150",
+                            ClassName = NopColumnClassDefaults.CenterAll,
+                            Editable = true,
+                            EditType = EditType.Number
+                        },
+                        new ColumnProperty(nameof(ProductPictureModel.OverrideAltAttribute))
+                        {
+                            Title = "Alt Metin",
+                            Width = "200",
+                            Editable = true,
+                            EditType = EditType.String
+                        },
+                        new ColumnProperty(nameof(ProductPictureModel.OverrideTitleAttribute))
+                        {
+                            Title = "Başlık Metin",
+                            Width = "200",
+                            Editable = true,
+                            EditType = EditType.String
+                        },
+                        new ColumnProperty(nameof(ProductPictureModel.Id))
+                        {
+                            Title = "Düzenle",
+                            Width = "200",
+                            ClassName = NopColumnClassDefaults.Button,
+                            Render = new RenderButtonsInlineEdit()
+                        },
+                        new ColumnProperty(nameof(ProductPictureModel.Id))
+                        {
+                            Title = "Sil",
+                            Width = "100",
+                            Render = new RenderButtonRemove("Sil"),
+                            ClassName = NopColumnClassDefaults.Button
+                        }
+                    }
+                })
+                <script>
+                    function renderPictureColumn(data, type, row, meta) {
+                        return '<a href="' + row.PictureUrl + '" target="_blank"><img alt="" src="' + row.PictureUrl + '" width="150" /></a>';
+                    }
+                </script>
+
+                <!-- Picture Upload -->
+                <div class="card card-default">
+                    <div class="card-header">Yeni Resim Ekle</div>
+                    <div class="card-body">
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <div class="label-wrapper"><label class="col-form-label">Resim Dosyaları</label><div title="Yüklemek istediğiniz resimleri seçin. Birden fazla resim seçebilirsiniz." data-toggle="tooltip" class="ico-help"><i class="fas fa-circle-question"></i></div></div>
+                            </div>
+                            <div class="col-md-9">
+                                <input type="file" id="pictureFiles" accept="image/*" multiple class="form-control" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-9 offset-md-3">
+                                <button type="button" id="uploadPictures" class="btn btn-primary">
+                                    <i class="fas fa-upload"></i> Resimleri Yükle
+                                </button>
+                                <span id="picture-upload-progress" style="display:none;" class="ml-2">
+                                    <i class="fas fa-spinner fa-spin"></i> Yükleniyor...
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                    $(function () {
+                        $('#uploadPictures').click(function () {
+                            var fileInput = document.getElementById('pictureFiles');
+                            if (!fileInput.files || fileInput.files.length === 0) {
+                                alert('Lütfen en az bir resim dosyası seçin.');
+                                return;
+                            }
+
+                            var formData = new FormData();
+                            for (var i = 0; i < fileInput.files.length; i++) {
+                                formData.append('files', fileInput.files[i]);
+                            }
+
+                            var token = $('input[name="__RequestVerificationToken"]').val();
+                            formData.append('__RequestVerificationToken', token);
+
+                            $('#uploadPictures').prop('disabled', true);
+                            $('#picture-upload-progress').show();
+
+                            $.ajax({
+                                type: 'POST',
+                                url: '@Url.Action("ProductPictureAdd", "VendorProduct", new { productId = Model.Id })',
+                                data: formData,
+                                processData: false,
+                                contentType: false,
+                                success: function (data) {
+                                    if (data.success) {
+                                        updateTable('#productpictures-grid');
+                                        fileInput.value = '';
+                                    } else {
+                                        alert(data.message || 'Resim yükleme başarısız.');
+                                    }
+                                },
+                                error: function () {
+                                    alert('Resim yükleme sırasında hata oluştu.');
+                                },
+                                complete: function () {
+                                    $('#uploadPictures').prop('disabled', false);
+                                    $('#picture-upload-progress').hide();
+                                }
+                            });
+                        });
+                    });
+                </script>
+            </nop-tab>
+            <nop-tab asp-name="tab-videos" asp-title="Videolar">
+                <!-- Videos Grid -->
+                @await Html.PartialAsync("Table", new DataTablesModel
+                {
+                    Name = "productvideos-grid",
+                    UrlRead = new DataUrl("ProductVideoList", "VendorProduct", new RouteValueDictionary { [nameof(Model.ProductVideoSearchModel.ProductId)] = Model.ProductVideoSearchModel.ProductId }),
+                    UrlDelete = new DataUrl("ProductVideoDelete", "VendorProduct", null),
+                    Length = Model.ProductVideoSearchModel.PageSize,
+                    LengthMenu = Model.ProductVideoSearchModel.AvailablePageSizes,
+                    ColumnCollection = new List<ColumnProperty>
+                    {
+                        new ColumnProperty(nameof(ProductVideoModel.Id))
+                        {
+                            Title = "Önizleme",
+                            Render = new RenderCustom("renderVideoColumn")
+                        },
+                        new ColumnProperty(nameof(ProductVideoModel.VideoUrl))
+                        {
+                            Title = "Video URL",
+                            Width = "400"
+                        },
+                        new ColumnProperty(nameof(ProductVideoModel.DisplayOrder))
+                        {
+                            Title = "Sıra",
+                            Width = "100",
+                            ClassName = NopColumnClassDefaults.CenterAll
+                        },
+                        new ColumnProperty(nameof(ProductVideoModel.Id))
+                        {
+                            Title = "Sil",
+                            Width = "100",
+                            Render = new RenderButtonRemove("Sil"),
+                            ClassName = NopColumnClassDefaults.Button
+                        }
+                    }
+                })
+                <script>
+                    function renderVideoColumn(data, type, row) {
+                        return '<video src="' + row.VideoUrl + '" width="200" controls></video>';
+                    }
+                </script>
+
+                <!-- Video Upload -->
+                <div class="card card-default">
+                    <div class="card-header">Yeni Video Yükle</div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            Yükleyeceğiniz video mp4 formatında ve minimum 8 maksimum 60 saniye uzunluğunda olmalıdır.
+                            Dosya boyutu en fazla 50 MB olabilir.
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <label>Video Dosyası (mp4)</label>
+                            </div>
+                            <div class="col-md-9">
+                                <input type="file" id="videoFile" accept="video/mp4" class="form-control" />
+                                <input type="hidden" id="videoDuration" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-9 offset-md-3">
+                                <button type="button" id="uploadVideo" class="btn btn-primary">
+                                    <i class="fas fa-upload"></i> Video Yükle
+                                </button>
+                                <span id="video-upload-progress" style="display:none;" class="ml-2">
+                                    <i class="fas fa-spinner fa-spin"></i> Yükleniyor...
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                    $(function() {
+                        // Get video duration from client
+                        $('#videoFile').on('change', function() {
+                            var file = this.files[0];
+                            if (!file) return;
+
+                            var video = document.createElement('video');
+                            video.preload = 'metadata';
+                            video.onloadedmetadata = function() {
+                                window.URL.revokeObjectURL(video.src);
+                                $('#videoDuration').val(video.duration);
+                            };
+                            video.src = URL.createObjectURL(file);
+                        });
+
+                        $('#uploadVideo').click(function() {
+                            var fileInput = document.getElementById('videoFile');
+                            if (!fileInput.files || !fileInput.files[0]) {
+                                alert('Lütfen bir video dosyası seçin.');
+                                return;
+                            }
+
+                            var file = fileInput.files[0];
+                            var ext = file.name.split('.').pop().toLowerCase();
+                            if (ext !== 'mp4') {
+                                alert('Sadece mp4 formatında video yükleyebilirsiniz.');
+                                return;
+                            }
+
+                            var duration = parseFloat($('#videoDuration').val());
+                            console.log('Video duration (seconds):', duration, 'Raw value:', $('#videoDuration').val());
+                            if (!isNaN(duration) && (duration < 8 || duration > 60)) {
+                                alert('Video en az 8 ve en fazla 60 saniye uzunluğunda olmalıdır. (Mevcut: ' + Math.round(duration) + ' sn)');
+                                return;
+                            }
+
+                            var formData = new FormData();
+                            formData.append('videoFile', file);
+                            formData.append('productId', '@Model.Id');
+                            formData.append('videoDuration', isNaN(duration) ? '' : duration.toString());
+
+                            var token = $('input[name="__RequestVerificationToken"]').val();
+                            formData.append('__RequestVerificationToken', token);
+
+                            $('#uploadVideo').prop('disabled', true);
+                            $('#video-upload-progress').show();
+
+                            $.ajax({
+                                type: 'POST',
+                                url: '@Url.Action("ProductVideoUpload", "VendorProduct")',
+                                data: formData,
+                                processData: false,
+                                contentType: false,
+                                success: function(data) {
+                                    if (data.success) {
+                                        updateTable('#productvideos-grid');
+                                        fileInput.value = '';
+                                        $('#videoDuration').val('');
+                                    } else {
+                                        alert(data.message || 'Video yükleme başarısız.');
+                                    }
+                                },
+                                error: function() {
+                                    alert('Video yükleme sırasında hata oluştu.');
+                                },
+                                complete: function() {
+                                    $('#uploadVideo').prop('disabled', false);
+                                    $('#video-upload-progress').hide();
+                                }
+                            });
+                        });
+                    });
+                </script>
+            </nop-tab>
+        </nop-tabs>
+    }
+    else
+    {
+        <div class="card card-default">
+            <div class="card-body">
+                Çoklu ortam eklemek için önce ürünü kaydedin.
+            </div>
+        </div>
+    }
+</div>

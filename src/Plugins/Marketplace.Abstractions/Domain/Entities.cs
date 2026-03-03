@@ -337,3 +337,19 @@ public partial class MarketplaceShipment : BaseEntity
     [Column] public bool IsReturn { get; set; }
     [Column] public DateTime CreatedOnUtc { get; set; }
 }
+
+// ============================================================
+// CATEGORY SPECIFICATION ATTRIBUTE MAPPING
+// ============================================================
+
+/// <summary>
+/// Maps a NopCommerce category to specification attributes that should be
+/// auto-added to products when a vendor selects that category.
+/// </summary>
+[Table("MarketplaceCategorySpecificationAttribute")]
+public partial class CategorySpecificationAttribute : BaseEntity
+{
+    [Column] public int CategoryId { get; set; }
+    [Column] public int SpecificationAttributeId { get; set; }
+    [Column] public int DisplayOrder { get; set; }
+}

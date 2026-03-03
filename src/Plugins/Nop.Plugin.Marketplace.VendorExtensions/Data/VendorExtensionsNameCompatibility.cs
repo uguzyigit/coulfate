@@ -11,7 +11,8 @@ public class VendorExtensionsNameCompatibility : INameCompatibility
     {
         { typeof(VendorCurrentAccount), "MarketplaceVendorCurrentAccount" },
         { typeof(VendorTransaction), "MarketplaceVendorTransaction" },
-        { typeof(VendorMarketplaceSettings), "MarketplaceVendorSettings" }
+        { typeof(VendorMarketplaceSettings), "MarketplaceVendorSettings" },
+        { typeof(global::Marketplace.Abstractions.Domain.CategorySpecificationAttribute), "MarketplaceCategorySpecificationAttribute" }
     };
 
     public Dictionary<(Type, string), string> ColumnName => new();

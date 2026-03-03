@@ -1,0 +1,147 @@
+@model Nop.Plugin.Marketplace.VendorExtensions.Models.VendorProductModel
+
+@using Nop.Web.Areas.Admin.Models.Catalog
+@using Nop.Web.Framework.Models
+
+<div class="card-body">
+    @if (Model.Id > 0)
+    {
+        <!-- Product Attribute Mappings -->
+        @await Html.PartialAsync("Table", new DataTablesModel
+        {
+            Name = "productattributemappings-grid",
+            UrlRead = new DataUrl("ProductAttributeMappingList", "VendorProduct", new RouteValueDictionary { [nameof(Model.ProductAttributeMappingSearchModel.ProductId)] = Model.ProductAttributeMappingSearchModel.ProductId }),
+            UrlDelete = new DataUrl("ProductAttributeMappingDelete", "VendorProduct", null),
+            Length = Model.ProductAttributeMappingSearchModel.PageSize,
+            LengthMenu = Model.ProductAttributeMappingSearchModel.AvailablePageSizes,
+            ColumnCollection = new List<ColumnProperty>
+            {
+                new ColumnProperty(nameof(ProductAttributeMappingModel.ProductAttribute))
+                {
+                    Title = "Nitelik",
+                    Width = "200"
+                },
+                new ColumnProperty(nameof(ProductAttributeMappingModel.AttributeControlType))
+                {
+                    Title = "Kontrol Tipi",
+                    Width = "200"
+                },
+                new ColumnProperty(nameof(ProductAttributeMappingModel.DisplayOrder))
+                {
+                    Title = "Sıra",
+                    Width = "100",
+                    ClassName = NopColumnClassDefaults.CenterAll
+                },
+                new ColumnProperty(nameof(ProductAttributeMappingModel.Id))
+                {
+                    Title = "Değerler",
+                    Width = "100",
+                    ClassName = NopColumnClassDefaults.Button,
+                    Render = new RenderCustom("renderValuesButton")
+                },
+                new ColumnProperty(nameof(ProductAttributeMappingModel.Id))
+                {
+                    Title = "Sil",
+                    Width = "100",
+                    Render = new RenderButtonRemove("Sil"),
+                    ClassName = NopColumnClassDefaults.Button
+                }
+            }
+        })
+        <script>
+            function renderValuesButton(data, type, row) {
+                var url = '@Url.Action("ProductAttributeValuesPopup", "VendorProduct")?productAttributeMappingId=' + data + '&btnId=btnRefreshAttributes&formId=product-form';
+                return '<a class="btn btn-default btn-sm" onclick="javascript:OpenWindow(\'' + url + '\', 900, 700, true); return false;" href="#">Değerler</a>';
+            }
+        </script>
+
+        <div style="background-color: #f8f9fa; padding: 10px; margin-top: 5px;">
+            <button type="submit" id="btnAddNewAttribute"
+                    onclick="javascript:OpenWindow('@(Url.Action("ProductAttributeMappingCreatePopup", "VendorProduct", new { productId = Model.Id, btnId = "btnRefreshAttributes", formId = "product-form" }))', 800, 500, true); return false;"
+                    class="btn btn-primary">
+                <i class="fas fa-plus-square"></i> Nitelik ekle
+            </button>
+            <button type="submit" id="btnRefreshAttributes" style="display:none"></button>
+        </div>
+        <script>
+            $(function() {
+                $('#btnRefreshAttributes').click(function() {
+                    updateTable('#productattributemappings-grid');
+                    return false;
+                });
+            });
+        </script>
+
+        <!-- Attribute Combinations -->
+        <div class="card card-default mt-3">
+            <div class="card-header">
+                Nitelik Kombinasyonları
+            </div>
+            <div class="card-body">
+                @await Html.PartialAsync("Table", new DataTablesModel
+                {
+                    Name = "productattributecombinations-grid",
+                    UrlRead = new DataUrl("ProductAttributeCombinationList", "VendorProduct", new RouteValueDictionary { [nameof(Model.ProductAttributeCombinationSearchModel.ProductId)] = Model.ProductAttributeCombinationSearchModel.ProductId }),
+                    UrlDelete = new DataUrl("ProductAttributeCombinationDelete", "VendorProduct", null),
+                    Length = Model.ProductAttributeCombinationSearchModel.PageSize,
+                    LengthMenu = Model.ProductAttributeCombinationSearchModel.AvailablePageSizes,
+                    ColumnCollection = new List<ColumnProperty>
+                    {
+                        new ColumnProperty(nameof(ProductAttributeCombinationModel.AttributesXml))
+                        {
+                            Title = "Nitelikler",
+                            Width = "400"
+                        },
+                        new ColumnProperty(nameof(ProductAttributeCombinationModel.StockQuantity))
+                        {
+                            Title = "Stok",
+                            Width = "100",
+                            ClassName = NopColumnClassDefaults.CenterAll
+                        },
+                        new ColumnProperty(nameof(ProductAttributeCombinationModel.Sku))
+                        {
+                            Title = "SKU",
+                            Width = "150"
+                        },
+                        new ColumnProperty(nameof(ProductAttributeCombinationModel.OverriddenPrice))
+                        {
+                            Title = "Fiyat",
+                            Width = "100"
+                        },
+                        new ColumnProperty(nameof(ProductAttributeCombinationModel.Id))
+                        {
+                            Title = "Sil",
+                            Width = "100",
+                            Render = new RenderButtonRemove("Sil"),
+                            ClassName = NopColumnClassDefaults.Button
+                        }
+                    }
+                })
+                <div style="background-color: #f8f9fa; padding: 10px; margin-top: 5px;">
+                    <button type="submit" id="btnAddNewCombination"
+                            onclick="javascript:OpenWindow('@(Url.Action("ProductAttributeCombinationCreatePopup", "VendorProduct", new { productId = Model.Id, btnId = "btnRefreshCombinations", formId = "product-form" }))', 800, 600, true); return false;"
+                            class="btn btn-primary">
+                        <i class="fas fa-plus-square"></i> Kombinasyon ekle
+                    </button>
+                    <button type="submit" id="btnRefreshCombinations" style="display:none"></button>
+                </div>
+                <script>
+                    $(function() {
+                        $('#btnRefreshCombinations').click(function() {
+                            updateTable('#productattributecombinations-grid');
+                            return false;
+                        });
+                    });
+                </script>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card card-default">
+            <div class="card-body">
+                Nitelik eklemek için önce ürünü kaydedin.
+            </div>
+        </div>
+    }
+</div>

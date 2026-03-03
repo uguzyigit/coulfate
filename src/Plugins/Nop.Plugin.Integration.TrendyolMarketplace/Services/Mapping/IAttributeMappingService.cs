@@ -31,6 +31,11 @@ public interface IAttributeMappingService
         int pageSize = int.MaxValue);
 
     /// <summary>
+    /// Gets all attribute mappings for a category (all types, not just variant)
+    /// </summary>
+    Task<IList<TrendyolAttribute>> GetByCategoryAsync(long trendyolCategoryId);
+
+    /// <summary>
     /// Gets all variant attributes for a category
     /// </summary>
     Task<IList<TrendyolAttribute>> GetVariantAttributesAsync(long trendyolCategoryId);

@@ -89,6 +89,19 @@ public class AttributeMappingService : IAttributeMappingService
     }
 
     /// <summary>
+    /// Gets all attribute mappings for a category (all types)
+    /// </summary>
+    public virtual async Task<IList<TrendyolAttribute>> GetByCategoryAsync(long trendyolCategoryId)
+    {
+        var query = from a in _attributeRepository.Table
+                    where a.TrendyolCategoryId == trendyolCategoryId
+                    orderby a.TrendyolAttributeName
+                    select a;
+
+        return await query.ToListAsync();
+    }
+
+    /// <summary>
     /// Gets all variant attributes for a category
     /// </summary>
     public virtual async Task<IList<TrendyolAttribute>> GetVariantAttributesAsync(long trendyolCategoryId)

@@ -1,0 +1,39 @@
+@model Nop.Plugin.Marketplace.VendorExtensions.Models.VendorProductModel
+
+@{
+    Layout = "_AdminLayout";
+    ViewBag.PageTitle = "Ürün Düzenle";
+    NopHtml.SetActiveMenuItemSystemName("Vendor.ProductCatalog.Products");
+}
+
+<form asp-controller="VendorProduct" asp-action="Edit" method="post" id="product-form">
+    <div class="content-header clearfix">
+        <h1 class="float-left">
+            Ürün Düzenle - @Model.Name
+            <small>
+                <i class="fas fa-arrow-circle-left"></i>
+                <a asp-action="List">Ürün Listesine Dön</a>
+            </small>
+        </h1>
+        <div class="float-right">
+            <a href="@ViewBag.PreviewUrl" target="_blank" class="btn btn-success">
+                <i class="fas fa-eye"></i>
+                Önizleme
+            </a>
+            <button type="submit" name="save" class="btn btn-primary">
+                <i class="far fa-floppy-disk"></i>
+                Kaydet
+            </button>
+            <button type="submit" name="save-continue" class="btn btn-primary">
+                <i class="far fa-floppy-disk"></i>
+                Kaydet ve Düzenlemeye Devam Et
+            </button>
+            <span id="product-delete" class="btn btn-danger">
+                <i class="far fa-trash-can"></i>
+                Sil
+            </span>
+        </div>
+    </div>
+    @await Html.PartialAsync("~/Plugins/Marketplace.VendorExtensions/Views/VendorProduct/_CreateOrUpdate.cshtml", Model)
+</form>
+<nop-delete-confirmation asp-model-id="@Model.Id" asp-button-id="product-delete" asp-action="Delete" />

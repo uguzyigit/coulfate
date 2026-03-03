@@ -1,0 +1,13 @@
+@model Nop.Plugin.Marketplace.VendorExtensions.Models.VendorProductModel
+
+<div class="card-body">
+    <div class="form-group row">
+        <div class="col-md-3">
+            <nop-label asp-for="DeliveryDateId" />
+        </div>
+        <div class="col-md-9">
+            <nop-select asp-for="DeliveryDateId" asp-items="Model.AvailableDeliveryDates" />
+            <span asp-validation-for="DeliveryDateId"></span>
+        </div>
+    </div>
+</div>

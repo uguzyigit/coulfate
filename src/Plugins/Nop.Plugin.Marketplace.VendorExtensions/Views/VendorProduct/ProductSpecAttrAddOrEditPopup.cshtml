@@ -1,0 +1,109 @@
+@model Nop.Web.Areas.Admin.Models.Catalog.AddSpecificationAttributeModel
+
+@{
+    Layout = "_AdminPopupLayout";
+    var isNew = Model.SpecificationId == 0;
+    ViewBag.PageTitle = isNew ? "Belirtim Niteliği Ekle" : "Belirtim Niteliği Düzenle";
+}
+
+@if (ViewBag.RefreshPage == true)
+{
+    <script>
+        try { window.opener.document.forms['@(Context.Request.Query["formId"])']['@(Context.Request.Query["btnId"])'].click(); }
+        catch (e) { }
+        window.close();
+    </script>
+}
+
+<form asp-controller="VendorProduct"
+      asp-action="@(isNew ? "ProductSpecificationAttributeAddPopup" : "ProductSpecAttrUpdatePopup")"
+      asp-route-btnId="@Context.Request.Query["btnId"]"
+      asp-route-formId="@Context.Request.Query["formId"]"
+      method="post">
+    <div class="content-header clearfix">
+        <h1 class="float-left">
+            @(isNew ? "Belirtim Niteliği Ekle" : $"Belirtim Niteliği Düzenle - {Model.AttributeName}")
+        </h1>
+        <div class="float-right">
+            <button type="submit" name="save" class="btn btn-primary">
+                <i class="far fa-floppy-disk"></i>
+                Kaydet
+            </button>
+        </div>
+    </div>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="form-horizontal">
+                <div class="cards-group">
+                    <div class="card card-default">
+                        <div class="card-body">
+                            <input type="hidden" asp-for="ProductId" />
+                            <input type="hidden" asp-for="SpecificationId" />
+                            <!-- AttributeType is forced to Option -->
+                            <input type="hidden" asp-for="AttributeTypeId" value="0" />
+
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <div class="label-wrapper"><label class="col-form-label">Nitelik</label><div title="Belirtim niteliğini seçin (örn: Malzeme, Ağırlık)." data-toggle="tooltip" class="ico-help"><i class="fas fa-circle-question"></i></div></div>
+                                </div>
+                                <div class="col-md-9">
+                                    @if (isNew)
+                                    {
+                                        <nop-select asp-for="AttributeId" asp-items="@Model.AvailableAttributes" />
+                                    }
+                                    else
+                                    {
+                                        <nop-editor asp-for="AttributeName" html-attributes="@(new { disabled = true })" />
+                                        <input type="hidden" asp-for="AttributeId" />
+                                    }
+                                </div>
+                            </div>
+                            <div class="form-group row" id="AttributeValueOptionSection">
+                                <div class="col-md-3">
+                                    <div class="label-wrapper"><label class="col-form-label">Değer</label><div title="Seçilen nitelik için değeri belirleyin." data-toggle="tooltip" class="ico-help"><i class="fas fa-circle-question"></i></div></div>
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-select asp-for="SpecificationAttributeOptionId" asp-items="@Model.AvailableOptions" />
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="DisplayOrder" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="DisplayOrder" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</form>
+
+@if (isNew)
+{
+    <script asp-location="Footer">
+        $(function() {
+            $("#@Html.IdFor(model => model.AttributeId)").change(function() {
+                var selectedAttributeId = $(this).val();
+                $.ajax({
+                    cache: false,
+                    type: "GET",
+                    url: "@(Url.Action("GetOptionsByAttributeId", "SpecificationAttribute", new { area = "Admin" }))",
+                    data: { attributeId: selectedAttributeId },
+                    success: function(data) {
+                        var ddl = $("#@Html.IdFor(model => model.SpecificationAttributeOptionId)");
+                        ddl.empty();
+                        if (data && data.length > 0) {
+                            $.each(data, function(i, item) {
+                                ddl.append($('<option></option>').val(item.id).text(item.name));
+                            });
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+}
